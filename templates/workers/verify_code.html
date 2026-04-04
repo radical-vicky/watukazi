@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Code{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verify-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .code-input {
+        font-size: 1.5rem;
+        text-align: center;
+        letter-spacing: 0.5rem;
+        font-family: monospace;
+    }
+    
+    .info-card {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card p {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="verify-container">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Enter Verification Code</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Enter the 6-digit code sent to your phone</p>
+        </div>
+        
+        <div class="info-card">
+            <p>Code sent to: <strong>{{ user.profile.phone_number }}</strong></p>
+            <p style="margin-top: 0.5rem;">The code expires in 10 minutes</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">Verification Code</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label class="form-label">6-Digit Code</label>
+                        <input type="text" name="code" class="form-input code-input" placeholder="000000" maxlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Verify Account</button>
+                </form>
+                
+                <div class="divider"></div>
+                
+                <div style="text-align: center;">
+                    <a href="{% url 'workers:request_verification' %}" style="font-size: 0.75rem; color: var(--accent-blue-light);">Resend Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

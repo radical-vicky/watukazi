@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Required{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 400px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">Email Verification Required</div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary);">Please verify your email address to complete registration.</p>
+                <div class="divider"></div>
+                <a href="{% url 'account_email' %}" class="btn btn-primary" style="width: 100%; text-align: center;">Manage Email</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

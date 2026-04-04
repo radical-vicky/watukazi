@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Logs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-section {
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .header-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .header-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .logs-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .logs-table th {
+        text-align: left;
+        padding: 0.75rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .logs-table td {
+        padding: 0.75rem;
+        font-size: 0.75rem;
+        border-bottom: 1px solid var(--border-subtle);
+        vertical-align: top;
+    }
+    
+    .logs-table tr:hover td {
+        background: var(--bg-tertiary);
+    }
+    
+    .direction-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+    
+    .direction-outgoing {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .direction-incoming {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+    
+    .status-delivered {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-sent {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-yellow);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-failed {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--accent-red);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .message-content {
+        color: var(--text-secondary);
+        max-width: 400px;
+        word-break: break-word;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+    }
+    
+    .phone-number {
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 0.75rem;
+    }
+    
+    .timestamp {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    .empty-state p {
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .pagination .btn {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+    }
+    
+    .pagination-current {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+    }
+    
+    @media (max-width: 768px) {
+        .header-section {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .logs-table th, .logs-table td {
+            padding: 0.5rem;
+        }
+        .message-content {
+            max-width: 200px;
+        }
+        .timestamp {
+            white-space: normal;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="header-section">
+        <div>
+            <h1 class="header-title">SMS Transaction Logs</h1>
+            <p class="header-subtitle">View all SMS communications</p>
+        </div>
+        <a href="{% url 'sms_simulator:send' %}" class="btn btn-primary">Send SMS</a>
+    </div>
+
+    <!-- Logs Table Card -->
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Direction</th>
+                            <th>Phone Number</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td>
+                                    {% if log.direction == 'outgoing' %}
+                                        <span class="direction-badge direction-outgoing">Outgoing</span>
+                                    {% else %}
+                                        <span class="direction-badge direction-incoming">Incoming</span>
+                                    {% endif %}
+                                </td>
+                                <td class="phone-number">{{ log.phone_number }}</td>
+                                <td>
+                                    <div class="message-content">{{ log.message|linebreaksbr }}</div>
+                                </td>
+                                <td>
+                                    {% if log.status == 'delivered' %}
+                                        <span class="status-badge status-delivered">Delivered</span>
+                                    {% elif log.status == 'sent' %}
+                                        <span class="status-badge status-sent">Sent</span>
+                                    {% elif log.status == 'failed' %}
+                                        <span class="status-badge status-failed">Failed</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="timestamp">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <p>No SMS logs found</p>
+                                    <a href="{% url 'sms_simulator:send' %}" class="btn btn-primary">Send Test SMS</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if logs.has_other_pages %}
+                <div class="pagination">
+                    {% if logs.has_previous %}
+                        <a href="?page={{ logs.previous_page_number }}" class="btn btn-secondary">Previous</a>
+                    {% endif %}
+                    <span class="pagination-current">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
+                    {% if logs.has_next %}
+                        <a href="?page={{ logs.next_page_number }}" class="btn btn-secondary">Next</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

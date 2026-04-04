@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Sent{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 400px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">Verify Your Email</div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary);">We have sent an email to you for verification. Follow the link provided to finalize the signup process.</p>
+                <div class="divider"></div>
+                <a href="{% url 'account_login' %}" class="btn btn-primary" style="width: 100%; text-align: center;">Return to Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

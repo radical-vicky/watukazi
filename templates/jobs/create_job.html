@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}Post a Job{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    /* Form Row Layout */
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group-full {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .form-label .required {
+        color: var(--accent-red);
+        margin-left: 0.25rem;
+    }
+    
+    .form-label .optional {
+        color: var(--text-muted);
+        font-weight: 400;
+        font-size: 0.65rem;
+    }
+    
+    .form-input, .form-textarea, .form-select {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+    
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-input:hover, .form-textarea:hover, .form-select:hover {
+        border-color: var(--border-medium);
+    }
+    
+    .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+    
+    .form-help {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    /* Skills Section */
+    .skills-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .skills-header label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .skills-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .skill-btn {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 4px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .skill-btn:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue-light);
+    }
+    
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.5rem;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem;
+        background: var(--bg-primary);
+    }
+    
+    .skills-grid::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .skills-grid::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+        border-radius: 3px;
+    }
+    
+    .skills-grid::-webkit-scrollbar-thumb {
+        background: var(--border-medium);
+        border-radius: 3px;
+    }
+    
+    .skill-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.5rem;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .skill-checkbox:hover {
+        background: var(--bg-tertiary);
+    }
+    
+    .skill-checkbox input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--accent-blue);
+    }
+    
+    .skill-checkbox span {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    
+    .selected-count {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+        text-align: right;
+    }
+    
+    /* AI Notice */
+    .ai-notice {
+        background: rgba(59, 130, 246, 0.06);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .ai-icon {
+        width: 36px;
+        height: 36px;
+        background: rgba(59, 130, 246, 0.12);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: var(--accent-blue-light);
+        flex-shrink: 0;
+    }
+    
+    .ai-content {
+        flex: 1;
+    }
+    
+    .ai-content strong {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .ai-content p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .btn-primary {
+        flex: 2;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .btn-secondary {
+        flex: 1;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+    
+    /* Responsive */
+    @media (max-width: 640px) {
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .skills-grid {
+            grid-template-columns: 1fr;
+        }
+        .action-buttons {
+            flex-direction: column;
+        }
+        .ai-notice {
+            flex-direction: column;
+        }
+        .ai-icon {
+            align-self: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Post a Job</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Fill in the details below to reach qualified workers</p>
+        </div>
+        
+        <!-- Info Card -->
+        <div style="background: var(--bg-tertiary); border-radius: 10px; padding: 0.875rem 1rem; margin-bottom: 1.5rem; border: 1px solid var(--border-subtle);">
+            <p style="font-size: 0.7rem; color: var(--text-muted);">Jobs with complete details receive <strong>2x more applications</strong></p>
+        </div>
+        
+        <!-- Main Form Card -->
+        <div class="card">
+            <div class="card-header">Job Information</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Basic Information</div>
+                        <div class="form-group-full">
+                            <label class="form-label">Job Title <span class="required">*</span></label>
+                            <input type="text" name="title" class="form-input" required 
+                                   placeholder="e.g., Need Plumber for Bathroom Installation">
+                            <div class="form-help">Be specific and clear about the role</div>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="form-label">Job Description <span class="required">*</span></label>
+                            <textarea name="description" class="form-textarea" rows="6" required 
+                                      placeholder="Describe the job details, requirements, working hours, and expectations..."></textarea>
+                            <div class="form-help">Include all relevant information workers need to know</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location & Compensation Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Location & Compensation</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Location <span class="required">*</span></label>
+                                <input type="text" name="location" class="form-input" required 
+                                       placeholder="e.g., Nairobi, CBD">
+                                <div class="form-help">City or specific area</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Budget (KES) <span class="optional">(Optional)</span></label>
+                                <input type="number" name="budget" class="form-input" 
+                                       placeholder="e.g., 5000">
+                                <div class="form-help">Leave empty if negotiable</div>
+                            </div>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="form-label">Duration (Days)</label>
+                            <input type="number" name="duration_days" class="form-input" value="1" min="1">
+                            <div class="form-help">Estimated time to complete the job</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Required Skills Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Required Skills</div>
+                        <div class="skills-header">
+                            <label>Select skills required for this job</label>
+                            <div class="skills-actions">
+                                <button type="button" class="skill-btn" onclick="selectAllSkills()">Select All</button>
+                                <button type="button" class="skill-btn" onclick="clearAllSkills()">Clear All</button>
+                            </div>
+                        </div>
+                        <div class="skills-grid" id="skillsGrid">
+                            {% for skill in skills %}
+                                <label class="skill-checkbox">
+                                    <input type="checkbox" name="required_skills" value="{{ skill.id }}" class="skill-check">
+                                    <span>{{ skill.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <div class="selected-count" id="selectedCount">0 skills selected</div>
+                    </div>
+                    
+                    <!-- AI Notice -->
+                    <div class="ai-notice">
+                        <div class="ai-icon">AI</div>
+                        <div class="ai-content">
+                            <strong>AI-Powered Matching</strong>
+                            <p>When you post this job, our AI system will automatically find matching workers based on skills and location. Qualified workers will be notified via SMS immediately.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-primary">Post Job & Notify Workers</button>
+                        <a href="{% url 'employers:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header">Tips for a Successful Job Post</div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0.25rem;">Clear Title</div>
+                        <p style="font-size: 0.65rem; color: var(--text-muted);">Use specific keywords like "Plumber", "Electrician", or "Carpenter"</p>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0.25rem;">Competitive Rates</div>
+                        <p style="font-size: 0.65rem; color: var(--text-muted);">Research market rates to attract quality workers</p>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0.25rem;">Specific Location</div>
+                        <p style="font-size: 0.65rem; color: var(--text-muted);">Include landmarks or specific areas for easy navigation</p>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0.25rem;">Relevant Skills</div>
+                        <p style="font-size: 0.65rem; color: var(--text-muted);">Select skills that accurately reflect the job requirements</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateSelectedCount() {
+        var checkboxes = document.querySelectorAll('.skill-check');
+        var checkedCount = document.querySelectorAll('.skill-check:checked').length;
+        var countText = document.getElementById('selectedCount');
+        if (checkedCount === 0) {
+            countText.textContent = '0 skills selected';
+        } else if (checkedCount === 1) {
+            countText.textContent = '1 skill selected';
+        } else {
+            countText.textContent = checkedCount + ' skills selected';
+        }
+    }
+    
+    function selectAllSkills() {
+        var checkboxes = document.querySelectorAll('.skill-check');
+        checkboxes.forEach(function(cb) {
+            cb.checked = true;
+        });
+        updateSelectedCount();
+    }
+    
+    function clearAllSkills() {
+        var checkboxes = document.querySelectorAll('.skill-check');
+        checkboxes.forEach(function(cb) {
+            cb.checked = false;
+        });
+        updateSelectedCount();
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        var checkboxes = document.querySelectorAll('.skill-check');
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+        updateSelectedCount();
+    });
+</script>
+{% endblock %}

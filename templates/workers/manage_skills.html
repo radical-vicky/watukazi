@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Skills{% endblock %}
+
+{% block extra_css %}
+<style>
+    .skills-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    /* Header Section */
+    .header-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .header-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .header-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+    
+    /* Info Card */
+    .info-card {
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .info-card p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .info-card strong {
+        color: var(--accent-blue-light);
+    }
+    
+    /* Category Section */
+    .category-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .category-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .category-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .category-count {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        background: var(--bg-primary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 10px;
+    }
+    
+    /* Skills Grid */
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .skill-card {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .skill-card:hover {
+        border-color: var(--accent-blue);
+        background: var(--bg-tertiary);
+        transform: translateY(-1px);
+    }
+    
+    .skill-card.selected {
+        border-color: var(--accent-blue);
+        background: rgba(59, 130, 246, 0.08);
+    }
+    
+    .skill-card input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--accent-blue);
+        margin: 0;
+    }
+    
+    .skill-name {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        flex: 1;
+    }
+    
+    .skill-card.selected .skill-name {
+        color: var(--accent-blue-light);
+        font-weight: 500;
+    }
+    
+    /* Control Bar */
+    .control-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-subtle);
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .control-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .control-btn {
+        font-size: 0.7rem;
+        padding: 0.375rem 0.75rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .control-btn:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue-light);
+    }
+    
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        padding: 0.375rem 0.75rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.7rem;
+        width: 200px;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+    
+    .selected-badge {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        background: var(--bg-tertiary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+    }
+    
+    /* Right Column Cards */
+    .stats-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .stats-header {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-tertiary);
+    }
+    
+    .stats-header h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stats-body {
+        padding: 1rem;
+    }
+    
+    .current-skill {
+        display: inline-block;
+        padding: 0.3125rem 0.75rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin: 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .current-skill:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue-light);
+    }
+    
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .info-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .info-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .info-list li::before {
+        content: "✓";
+        color: var(--accent-blue-light);
+        font-size: 0.65rem;
+    }
+    
+    .popular-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .popular-skill {
+        display: inline-block;
+        padding: 0.25rem 0.625rem;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 20px;
+        font-size: 0.65rem;
+        color: var(--accent-blue-light);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        background: var(--bg-primary);
+        border-radius: 10px;
+    }
+    
+    .empty-state p {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .skills-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        }
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        .control-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .search-box {
+            width: 100%;
+        }
+        .search-input {
+            width: 100%;
+        }
+        .control-buttons {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container skills-container">
+    <!-- Header -->
+    <div class="header-section">
+        <h1 class="header-title">Manage Skills</h1>
+        <p class="header-subtitle">Select the skills that represent your expertise</p>
+    </div>
+    
+    <!-- Info Card -->
+    <div class="info-card">
+        <p>Workers with <strong>5+ skills</strong> receive <strong>3x more job matches</strong></p>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Left Column - Skill Selection -->
+        <div>
+            <div class="card">
+                <div class="card-header">Select Your Skills</div>
+                <div class="card-body">
+                    <form method="post" id="skillsForm">
+                        {% csrf_token %}
+                        
+                        <div class="control-bar">
+                            <div class="control-buttons">
+                                <button type="button" class="control-btn" onclick="selectAll()">Select All</button>
+                                <button type="button" class="control-btn" onclick="clearAll()">Clear All</button>
+                            </div>
+                            <div class="search-box">
+                                <input type="text" id="searchSkills" class="search-input" placeholder="Filter skills..." onkeyup="filterSkills()">
+                            </div>
+                            <span class="selected-badge" id="selectedCount">0 selected</span>
+                        </div>
+                        
+                        <div id="skillsContainer">
+                            {% for category in skill_categories %}
+                                <div class="category-section" data-category="{{ category.name }}">
+                                    <div class="category-header">
+                                        <span class="category-title">{{ category.name }}</span>
+                                        <span class="category-count">{{ category.skills.count }} skills</span>
+                                    </div>
+                                    <div class="skills-grid">
+                                        {% for skill in category.skills.all %}
+                                            <label class="skill-card" data-skill-name="{{ skill.name|lower }}">
+                                                <input type="checkbox" name="skills" value="{{ skill.id }}" 
+                                                       {% if skill in worker.skills.all %}checked{% endif %}
+                                                       onchange="updateSelectedCount()">
+                                                <span class="skill-name">{{ skill.name }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" class="btn btn-primary" style="flex: 2;">Save Skills</button>
+                            <a href="{% url 'workers:profile' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Stats & Info -->
+        <div>
+            <!-- Current Skills Card -->
+            <div class="stats-card">
+                <div class="stats-header">
+                    <h3>Current Skills</h3>
+                </div>
+                <div class="stats-body">
+                    {% if worker.skills.all %}
+                        <div id="currentSkillsList">
+                            {% for skill in worker.skills.all %}
+                                <span class="current-skill">{{ skill.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <div style="margin-top: 0.75rem; font-size: 0.7rem; color: var(--text-muted);">
+                            Total: <strong id="currentSkillCount">{{ worker.skills.count }}</strong> skills
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>No skills selected yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Why Add Skills Card -->
+            <div class="stats-card">
+                <div class="stats-header">
+                    <h3>Why Add Skills?</h3>
+                </div>
+                <div class="stats-body">
+                    <ul class="info-list">
+                        <li>Employers search for workers by specific skills</li>
+                        <li>Better skill matches lead to more job opportunities</li>
+                        <li>AI uses your skills to recommend relevant jobs</li>
+                        <li>Showcase your expertise and stand out from others</li>
+                        <li>Get matched with jobs that fit your abilities perfectly</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Popular Skills Card -->
+            <div class="stats-card">
+                <div class="stats-header">
+                    <h3>Popular Skills in High Demand</h3>
+                </div>
+                <div class="stats-body">
+                    <div class="popular-skills">
+                        <span class="popular-skill">Plumbing</span>
+                        <span class="popular-skill">Electrical Wiring</span>
+                        <span class="popular-skill">Carpentry</span>
+                        <span class="popular-skill">Masonry</span>
+                        <span class="popular-skill">Painting</span>
+                        <span class="popular-skill">Welding</span>
+                        <span class="popular-skill">Driving</span>
+                        <span class="popular-skill">Cleaning Services</span>
+                        <span class="popular-skill">Gardening</span>
+                        <span class="popular-skill">Housekeeping</span>
+                        <span class="popular-skill">Tiling</span>
+                        <span class="popular-skill">Roofing</span>
+                    </div>
+                    <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.75rem; margin-bottom: 0;">
+                        These skills are currently in high demand
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Skill Level Card -->
+            <div class="stats-card">
+                <div class="stats-header">
+                    <h3>Skill Level Recommendation</h3>
+                </div>
+                <div class="stats-body">
+                    <div style="margin-bottom: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span style="font-size: 0.65rem; color: var(--text-muted);">Profile Strength</span>
+                            <span style="font-size: 0.65rem; font-weight: 600; color: var(--accent-blue-light);" id="profileStrength">0%</span>
+                        </div>
+                        <div class="progress-bar" style="background: var(--bg-primary); height: 4px; border-radius: 2px; overflow: hidden;">
+                            <div id="strengthFill" class="progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light));"></div>
+                        </div>
+                    </div>
+                    <p id="strengthMessage" style="font-size: 0.65rem; color: var(--text-muted);">Add skills to improve your profile</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update selected count
+    function updateSelectedCount() {
+        var checkboxes = document.querySelectorAll('input[name="skills"]');
+        var checkedCount = 0;
+        checkboxes.forEach(function(cb) {
+            if (cb.checked) checkedCount++;
+        });
+        document.getElementById('selectedCount').textContent = checkedCount + ' selected';
+        
+        // Update profile strength
+        var totalSkills = document.querySelectorAll('input[name="skills"]').length;
+        var strength = Math.min(Math.round((checkedCount / totalSkills) * 100), 100);
+        document.getElementById('profileStrength').textContent = strength + '%';
+        document.getElementById('strengthFill').style.width = strength + '%';
+        
+        var message = document.getElementById('strengthMessage');
+        if (strength === 0) {
+            message.textContent = 'Add skills to improve your profile';
+        } else if (strength < 20) {
+            message.textContent = 'Good start! Add more skills to get better matches';
+        } else if (strength < 50) {
+            message.textContent = 'Great progress! You\'re building a strong profile';
+        } else if (strength < 80) {
+            message.textContent = 'Excellent! Your profile is very competitive';
+        } else {
+            message.textContent = 'Perfect! Your profile is complete';
+        }
+    }
+    
+    // Select all skills
+    function selectAll() {
+        var checkboxes = document.querySelectorAll('input[name="skills"]');
+        checkboxes.forEach(function(cb) {
+            cb.checked = true;
+        });
+        updateSelectedCount();
+        updateCardStyles();
+    }
+    
+    // Clear all skills
+    function clearAll() {
+        var checkboxes = document.querySelectorAll('input[name="skills"]');
+        checkboxes.forEach(function(cb) {
+            cb.checked = false;
+        });
+        updateSelectedCount();
+        updateCardStyles();
+    }
+    
+    // Update card styles based on checkbox state
+    function updateCardStyles() {
+        var cards = document.querySelectorAll('.skill-card');
+        cards.forEach(function(card) {
+            var checkbox = card.querySelector('input');
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Filter skills by search term
+    function filterSkills() {
+        var searchTerm = document.getElementById('searchSkills').value.toLowerCase();
+        var categories = document.querySelectorAll('.category-section');
+        
+        categories.forEach(function(category) {
+            var skills = category.querySelectorAll('.skill-card');
+            var hasVisible = false;
+            
+            skills.forEach(function(skill) {
+                var skillName = skill.getAttribute('data-skill-name');
+                if (skillName.includes(searchTerm)) {
+                    skill.style.display = 'flex';
+                    hasVisible = true;
+                } else {
+                    skill.style.display = 'none';
+                }
+            });
+            
+            // Show/hide category based on visible skills
+            if (hasVisible || searchTerm === '') {
+                category.style.display = 'block';
+            } else {
+                category.style.display = 'none';
+            }
+        });
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSelectedCount();
+        updateCardStyles();
+        
+        // Add change event to all checkboxes
+        var checkboxes = document.querySelectorAll('input[name="skills"]');
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                updateSelectedCount();
+                updateCardStyles();
+            });
+        });
+    });
+</script>
+{% endblock %}

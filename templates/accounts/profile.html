@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    
+    .info-card {
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .info-card p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .info-card strong {
+        color: var(--accent-blue-light);
+    }
+    
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group-full {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .form-label .required {
+        color: var(--accent-red);
+        margin-left: 0.25rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-input:hover {
+        border-color: var(--border-medium);
+    }
+    
+    .form-hint {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .btn-primary {
+        flex: 2;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .btn-secondary {
+        flex: 1;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+    
+    @media (max-width: 640px) {
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-container">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">My Profile</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Manage your account information</p>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="info-card">
+            <p>Your profile information helps employers and workers connect with you</p>
+        </div>
+        
+        <!-- Profile Form Card -->
+        <div class="card">
+            <div class="card-header">Account Information</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Personal Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Personal Information</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">First Name <span class="required">*</span></label>
+                                <input type="text" name="first_name" class="form-input" value="{{ form.first_name.value|default:'' }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Last Name <span class="required">*</span></label>
+                                <input type="text" name="last_name" class="form-input" value="{{ form.last_name.value|default:'' }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="form-label">Email Address <span class="required">*</span></label>
+                            <input type="email" name="email" class="form-input" value="{{ form.email.value|default:'' }}" required>
+                            <div class="form-hint">Used for account notifications</div>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="form-label">Phone Number <span class="required">*</span></label>
+                            <input type="tel" name="phone_number" class="form-input" value="{{ form.phone_number.value|default:'' }}" required>
+                            <div class="form-hint">Workers or employers will contact you here</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Location Information</div>
+                        <div class="form-group-full">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-input" value="{{ form.location.value|default:'' }}" placeholder="e.g., Nairobi, Kenya">
+                            <div class="form-hint">Your city or area</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">County</label>
+                                <input type="text" name="county" class="form-input" value="{{ form.county.value|default:'' }}" placeholder="e.g., Nairobi">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sub County</label>
+                                <input type="text" name="sub_county" class="form-input" value="{{ form.sub_county.value|default:'' }}" placeholder="e.g., Westlands">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{% url 'accounts:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Account Type Card -->
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header">Account Type</div>
+            <div class="card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div class="badge badge-info" style="display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.7rem;">
+                            {{ user.profile.get_user_type_display|upper }}
+                        </div>
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Account created on {{ user.date_joined|date:"F j, Y" }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="badge {% if user.profile.is_verified %}badge-success{% else %}badge-warning{% endif %}" style="display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.7rem;">
+                            {% if user.profile.is_verified %}Verified{% else %}Unverified{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

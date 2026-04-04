@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 500px; margin: 0 auto; text-align: center;">
+        <div class="card">
+            <div class="card-body" style="padding: 3rem;">
+                <h1 style="font-size: 4rem; font-weight: 700; color: var(--blue-primary); margin-bottom: 1rem;">500</h1>
+                <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Server Error</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Something went wrong on our end. Please try again later.</p>
+                <a href="/" class="btn btn-primary">Return Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

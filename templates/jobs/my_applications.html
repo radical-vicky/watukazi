@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}My Applications{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 1.25rem;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover::after {
+        transform: scaleX(1);
+    }
+    
+    .stat-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--accent-blue-light);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .application-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .application-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateX(2px);
+    }
+    
+    .job-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .job-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+    
+    .status-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-yellow);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-accepted {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-rejected {
+        background: rgba(107, 114, 128, 0.15);
+        color: var(--text-muted);
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .match-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: var(--accent-blue-light);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .section-header h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        background: var(--bg-primary);
+        border-radius: 10px;
+    }
+    
+    .empty-state p {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .stat-value {
+            font-size: 1.25rem;
+        }
+        .job-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">My Applications</h1>
+        <p style="color: var(--text-secondary); font-size: 0.875rem;">Track your application status</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_count|default:"0" }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ accepted_count|default:"0" }}</div>
+            <div class="stat-label">Accepted</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ completed_count|default:"0" }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <h3>All Applications</h3>
+        <a href="{% url 'jobs:search_jobs' %}" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Browse Jobs</a>
+    </div>
+
+    {% if applications %}
+        {% for app in applications %}
+            <div class="application-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <div class="job-title">{{ app.job_request.title }}</div>
+                        <div class="job-meta">
+                            <span>{{ app.job_request.location }}</span>
+                            <span>Applied {{ app.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                            <span class="status-badge 
+                                {% if app.status == 'pending' %}status-pending
+                                {% elif app.status == 'accepted' %}status-accepted
+                                {% elif app.status == 'completed' %}status-completed
+                                {% else %}status-rejected{% endif %}">
+                                {{ app.get_status_display }}
+                            </span>
+                            <span class="match-badge">Match: {{ app.match_score }}%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <a href="{% url 'jobs:job_detail' app.job_request.id %}" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">View Job</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <p>No applications yet</p>
+            <a href="{% url 'jobs:search_jobs' %}" class="btn btn-primary" style="margin-top: 0.75rem;">Browse Jobs</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

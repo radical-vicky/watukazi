@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Out{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 400px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">Sign Out</div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Are you sure you want to sign out?</p>
+                <form method="post" action="{% url 'account_logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Out</button>
+                    <a href="/" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem; text-align: center;">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

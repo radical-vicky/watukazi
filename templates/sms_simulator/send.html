@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Send SMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 540px;
+        margin: 0 auto;
+    }
+    
+    .info-card {
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .info-card p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .info-card strong {
+        color: var(--accent-blue-light);
+    }
+    
+    .form-hint {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .commands-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .commands-list li {
+        margin-bottom: 0.5rem;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .commands-list li:last-child {
+        margin-bottom: 0;
+    }
+    
+    .command-code {
+        background: var(--bg-primary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 0.65rem;
+        color: var(--accent-blue-light);
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .command-desc {
+        color: var(--text-muted);
+    }
+    
+    .alert-info {
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        margin-top: 1rem;
+        font-size: 0.7rem;
+        color: var(--accent-blue-light);
+    }
+    
+    .phone-input {
+        font-family: 'SF Mono', Monaco, monospace;
+    }
+    
+    @media (max-width: 640px) {
+        .commands-list li {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Send Test SMS</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Send a test message to simulate SMS communication</p>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="info-card">
+            <p>This is the SMS simulator. Messages will appear in the <strong>SMS Logs</strong> and be processed by the system.</p>
+        </div>
+        
+        <!-- Send SMS Form Card -->
+        <div class="card">
+            <div class="card-header">Compose Message</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone_number" class="form-input phone-input" placeholder="0712345678" required>
+                        <div class="form-hint">Format: 0712345678 (10 digits)</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Message</label>
+                        <textarea name="message" class="form-textarea" rows="6" placeholder="Type your SMS message here..." required></textarea>
+                        <div class="form-hint">Maximum 160 characters per SMS</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send SMS</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Test Commands Card -->
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header">Test Commands</div>
+            <div class="card-body">
+                <p style="color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 0.75rem;">Try these test commands:</p>
+                <ul class="commands-list">
+                    <li><code class="command-code">HELP</code> <span class="command-desc">- Show all commands</span></li>
+                    <li><code class="command-code">JOBS</code> <span class="command-desc">- Find jobs (as worker)</span></li>
+                    <li><code class="command-code">ADD_SKILL Plumbing</code> <span class="command-desc">- Add skill (as worker)</span></li>
+                    <li><code class="command-code">STATUS</code> <span class="command-desc">- View profile</span></li>
+                    <li><code class="command-code">MYJOBS</code> <span class="command-desc">- View jobs (as employer)</span></li>
+                    <li><code class="command-code">POST|Title|Desc|Location|Budget|Skills</code> <span class="command-desc">- Post job (as employer)</span></li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Info Alert -->
+        <div class="alert-info">
+            This is the SMS simulator. In production, these SMS would be sent to real phone numbers via Africa's Talking API.
+        </div>
+    </div>
+</div>
+{% endblock %}

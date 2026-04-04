@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.5rem; font-weight: 600; color: var(--blue-light);">Notifications</h1>
+            <p style="color: var(--text-secondary);">Stay updated on your job activity</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            {% if unread_count > 0 %}
+                <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-secondary" style="font-size: 0.75rem;">Mark All as Read</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            {% if notifications %}
+                {% for notification in notifications %}
+                    <div class="notification-item {% if not notification.is_read %}notification-unread{% endif %}" 
+                         style="display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-light); {% if not notification.is_read %}background: rgba(42, 110, 255, 0.05);{% endif %}">
+                        
+                        <div style="flex-shrink: 0;">
+                            <div style="width: 40px; height: 40px; background: var(--bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                                {{ notification.get_notification_icon }}
+                            </div>
+                        </div>
+                        
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                                <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">{{ notification.title }}</h4>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">{{ notification.created_at|timesince }} ago</span>
+                            </div>
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; white-space: pre-line;">{{ notification.message|truncatewords:30 }}</p>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                {% if notification.link %}
+                                    <a href="{% url 'notifications:detail' notification.id %}" style="font-size: 0.7rem; color: var(--blue-primary); text-decoration: none;">View Details →</a>
+                                {% endif %}
+                                {% if not notification.is_read %}
+                                    <a href="{% url 'notifications:mark_read' notification.id %}" style="font-size: 0.7rem; color: var(--text-muted);">Mark as read</a>
+                                {% endif %}
+                                <a href="{% url 'notifications:delete' notification.id %}" style="font-size: 0.7rem; color: #ff7a7a;" onclick="return confirm('Delete this notification?')">Delete</a>
+                            </div>
+                        </div>
+                        
+                        {% if not notification.is_read %}
+                            <div style="width: 8px; height: 8px; background: var(--blue-primary); border-radius: 50%; margin-top: 0.5rem;"></div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if notifications.has_other_pages %}
+                    <div style="padding: 1rem 1.5rem; display: flex; justify-content: center; gap: 0.5rem;">
+                        {% if notifications.has_previous %}
+                            <a href="?page={{ notifications.previous_page_number }}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Previous</a>
+                        {% endif %}
+                        <span style="padding: 0.25rem 0.75rem; font-size: 0.75rem; color: var(--text-secondary);">Page {{ notifications.number }} of {{ notifications.paginator.num_pages }}</span>
+                        {% if notifications.has_next %}
+                            <a href="?page={{ notifications.next_page_number }}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Next</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+            {% else %}
+                <div class="empty-state" style="text-align: center; padding: 3rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔔</div>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">No notifications yet</p>
+                    <p style="font-size: 0.75rem; color: var(--text-muted);">When you apply for jobs or receive updates, they'll appear here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

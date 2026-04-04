@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Company Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    /* Avatar Section */
+    .avatar-section {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .avatar-container {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .avatar-preview {
+        width: 96px;
+        height: 96px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 auto;
+        border: 3px solid var(--bg-secondary);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .avatar-hint {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 0.75rem;
+    }
+    
+    /* Form Layout */
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group-full {
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .form-label .optional {
+        color: var(--text-muted);
+        font-weight: 400;
+        font-size: 0.65rem;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-input:hover {
+        border-color: var(--border-medium);
+    }
+    
+    /* Help Text */
+    .form-help {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .btn-primary {
+        flex: 2;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .btn-secondary {
+        flex: 1;
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+    
+    /* Info Card */
+    .info-card {
+        background: var(--bg-tertiary);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .info-card p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-card strong {
+        color: var(--text-primary);
+    }
+    
+    @media (max-width: 640px) {
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .action-buttons {
+            flex-direction: column;
+        }
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Edit Company Profile</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Update your company information to attract more workers</p>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="info-card">
+            <p>Complete your profile to get better visibility</p>
+            <p>Companies with complete profiles receive <strong>3x more applications</strong></p>
+        </div>
+        
+        <!-- Main Form Card -->
+        <div class="card">
+            <div class="card-header">Company Information</div>
+            <div class="card-body">
+                <!-- Avatar Preview -->
+                <div class="avatar-section">
+                    <div class="avatar-container">
+                        <div class="avatar-preview">
+                            {{ user.username|make_list|first|upper }}
+                        </div>
+                    </div>
+                    <div class="avatar-hint">Company logo will appear here</div>
+                </div>
+                
+                <form method="post" action="{% url 'employers:update_company' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Basic Information</div>
+                        <div class="form-group-full">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" name="company_name" class="form-input" 
+                                   value="{{ profile.company_name|default:'' }}" 
+                                   placeholder="e.g., ABC Construction Ltd">
+                            <div class="form-help">Your business name as registered</div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Business Registration <span class="optional">(Optional)</span></label>
+                                <input type="text" name="business_registration" class="form-input" 
+                                       value="{{ profile.business_registration|default:'' }}" 
+                                       placeholder="e.g., CPR/2023/123456">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Website <span class="optional">(Optional)</span></label>
+                                <input type="url" name="website" class="form-input" 
+                                       value="{{ profile.website|default:'' }}" 
+                                       placeholder="https://www.example.com">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">Contact Information</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" name="location" class="form-input" 
+                                       value="{{ user.profile.location|default:'' }}" 
+                                       placeholder="e.g., Nairobi, Kenya">
+                                <div class="form-help">Where your business is located</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" name="phone_number" class="form-input" 
+                                       value="{{ user.profile.phone_number|default:'' }}" 
+                                       placeholder="0712345678">
+                                <div class="form-help">Workers will contact you here</div>
+                            </div>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-input" 
+                                   value="{{ user.email|default:'' }}" 
+                                   placeholder="contact@example.com">
+                            <div class="form-help">Used for account notifications</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{% url 'employers:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Profile Preview Card -->
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header">Profile Preview</div>
+            <div class="card-body">
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; color: white;">
+                        {{ user.username|make_list|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600;">{{ profile.company_name|default:"Your Company Name" }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">{{ user.profile.location|default:"Location not set" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

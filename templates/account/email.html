@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Email Addresses{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="max-width: 500px; margin: 0 auto;">
+        <div class="card">
+            <div class="card-header">Email Addresses</div>
+            <div class="card-body">
+                {% if user.emailaddress_set.all %}
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">The following email addresses are associated with your account:</p>
+                    <form method="post" action="{% url 'account_email' %}">
+                        {% csrf_token %}
+                        {% for emailaddress in user.emailaddress_set.all %}
+                            <div style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="email" value="{{ emailaddress.email }}" style="width: 1rem; height: 1rem;">
+                                <label style="flex: 1;">
+                                    {{ emailaddress.email }}
+                                    {% if emailaddress.verified %}
+                                        <span class="badge badge-success" style="margin-left: 0.5rem;">Verified</span>
+                                    {% else %}
+                                        <span class="badge badge-warning" style="margin-left: 0.5rem;">Unverified</span>
+                                    {% endif %}
+                                    {% if emailaddress.primary %}
+                                        <span class="badge badge-info" style="margin-left: 0.5rem;">Primary</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        {% endfor %}
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <button type="submit" name="action_primary" class="btn btn-primary" style="flex: 1;">Make Primary</button>
+                            <button type="submit" name="action_send" class="btn btn-secondary" style="flex: 1;">Re-send Verification</button>
+                            <button type="submit" name="action_remove" class="btn btn-outline" style="flex: 1;">Remove</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p style="color: var(--text-secondary);">No email addresses associated with your account.</p>
+                {% endif %}
+                
+                <div class="divider"></div>
+                
+                <h4 style="font-size: 0.875rem; color: var(--blue-light); margin-bottom: 1rem;">Add Email Address</h4>
+                <form method="post" action="{% url 'account_email' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <input type="email" name="email" class="form-input" placeholder="Email address" required>
+                    </div>
+                    <button type="submit" name="action_add" class="btn btn-primary" style="width: 100%;">Add Email</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

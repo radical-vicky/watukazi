@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-item {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .info-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .status-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    
+    .status-open {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-matched {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-yellow);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-cancelled {
+        background: rgba(107, 114, 128, 0.15);
+        color: var(--text-muted);
+        border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .description-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .description-text {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+    
+    .skills-section {
+        margin-top: 1rem;
+    }
+    
+    .skill-tag {
+        display: inline-block;
+        padding: 0.25rem 0.625rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin: 0.25rem;
+    }
+    
+    .applicant-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .applicant-card:last-child {
+        margin-bottom: 0;
+    }
+    
+    .applicant-card:hover {
+        border-color: var(--accent-blue);
+    }
+    
+    .applicant-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .applicant-detail {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .applicant-skills {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    
+    .alert-info {
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid var(--accent-blue);
+        border-radius: 8px;
+        padding: 1rem;
+        font-size: 0.875rem;
+        color: var(--accent-blue-light);
+    }
+    
+    .empty-applications {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+    
+    .apply-card {
+        margin-top: 1.5rem;
+    }
+    
+    .divider {
+        height: 1px;
+        background: var(--border-subtle);
+        margin: 1.5rem 0;
+    }
+    
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .action-buttons {
+            flex-direction: column;
+        }
+        .applicant-card {
+            padding: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="detail-grid">
+        <!-- Job Details Card -->
+        <div class="card">
+            <div class="card-header">{{ job.title }}</div>
+            <div class="card-body">
+                <!-- Info Grid -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">{{ job.location }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Budget</div>
+                        <div class="info-value">KES {{ job.budget|default:"Negotiable" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Duration</div>
+                        <div class="info-value">{{ job.duration_days }} days</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Posted</div>
+                        <div class="info-value">{{ job.created_at|date:"F j, Y" }}</div>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="status-section">
+                    <div class="status-label">Status</div>
+                    <span class="status-badge 
+                        {% if job.status == 'open' %}status-open
+                        {% elif job.status == 'completed' %}status-completed
+                        {% elif job.status == 'cancelled' %}status-cancelled
+                        {% else %}status-matched{% endif %}">
+                        {{ job.get_status_display }}
+                    </span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <!-- Description -->
+                <div class="description-section">
+                    <div class="section-label">Description</div>
+                    <div class="description-text">{{ job.description|linebreaks }}</div>
+                </div>
+                
+                <!-- Required Skills -->
+                <div class="skills-section">
+                    <div class="section-label">Required Skills</div>
+                    <div>
+                        {% for skill in job.required_skills.all %}
+                            <span class="skill-tag">{{ skill.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Employer View - Applications -->
+        {% if user == job.employer %}
+            <div class="card">
+                <div class="card-header">Applications ({{ matches|length }})</div>
+                <div class="card-body">
+                    {% if matches %}
+                        {% for match in matches %}
+                            <div class="applicant-card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                                    <div style="flex: 1;">
+                                        <div class="applicant-name">{{ match.worker.get_full_name|default:match.worker.username }}</div>
+                                        <div class="applicant-detail">Phone: {{ match.worker.profile.phone_number }}</div>
+                                        <div class="applicant-detail">Location: {{ match.worker.profile.location|default:"Not specified" }}</div>
+                                        <div class="applicant-detail">Match Score: {{ match.match_score }}%</div>
+                                        <div class="applicant-skills">
+                                            {% for skill in match.worker.worker_profile.skills.all|slice:":5" %}
+                                                <span class="skill-tag">{{ skill.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <span class="status-badge 
+                                            {% if match.status == 'accepted' %}status-open
+                                            {% elif match.status == 'pending' %}status-matched
+                                            {% elif match.status == 'completed' %}status-completed
+                                            {% else %}status-cancelled{% endif %}">
+                                            {{ match.get_status_display }}
+                                        </span>
+                                        {% if match.status == 'pending' %}
+                                            <div class="action-buttons">
+                                                <form method="post" action="{% url 'jobs:accept_match' match.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Accept</button>
+                                                </form>
+                                                <form method="post" action="{% url 'jobs:reject_match' match.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Reject</button>
+                                                </form>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-applications">
+                            <p>No applications yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        
+        <!-- Worker View - Apply Section -->
+        {% elif user.profile.user_type == 'worker' %}
+            {% if not has_applied and job.status == 'open' %}
+                <div class="card apply-card">
+                    <div class="card-header">Apply for this Job</div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Interested in this position?</p>
+                        <form method="post" action="{% url 'jobs:worker_respond' 0 %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="job_id" value="{{ job.id }}">
+                            <button type="submit" name="response" value="accept" class="btn btn-primary">Apply Now</button>
+                        </form>
+                    </div>
+                </div>
+            {% elif has_applied %}
+                <div class="alert-info">
+                    You have already applied for this job. Please wait for the employer's response.
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

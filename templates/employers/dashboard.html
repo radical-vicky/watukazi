@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}Employer Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 1.25rem;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover::after {
+        transform: scaleX(1);
+    }
+    
+    .stat-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--accent-blue-light);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .welcome-section {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 1.75rem;
+        margin-bottom: 2rem;
+    }
+    
+    .profile-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .profile-card:hover {
+        border-color: var(--accent-blue);
+    }
+    
+    .profile-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-tertiary);
+    }
+    
+    .profile-header h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .profile-body {
+        padding: 1.25rem;
+    }
+    
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .profile-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .profile-location {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 0.75rem;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        color: var(--text-muted);
+    }
+    
+    .info-value {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    
+    .edit-profile-link {
+        display: block;
+        width: 100%;
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .edit-profile-link:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue-light);
+        text-decoration: none;
+    }
+    
+    .progress-bar {
+        background: var(--bg-primary);
+        height: 6px;
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .progress-fill {
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-blue-light));
+        height: 100%;
+        border-radius: 3px;
+    }
+    
+    .job-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .job-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateX(2px);
+    }
+    
+    .job-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .job-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .applicant-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .applicant-card:hover {
+        border-color: var(--accent-blue);
+    }
+    
+    .applicant-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .applicant-detail {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+    
+    .match-badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: var(--accent-blue-light);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .section-header h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .section-count {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        background: var(--bg-tertiary);
+        padding: 0.125rem 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        background: var(--bg-primary);
+        border-radius: 10px;
+    }
+    
+    .empty-state p {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state small {
+        color: var(--text-muted);
+        font-size: 0.7rem;
+    }
+    
+    .sms-commands {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .sms-header {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        background: var(--bg-tertiary);
+    }
+    
+    .sms-header span:first-child {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    
+    .sms-body {
+        padding: 1rem;
+        display: none;
+    }
+    
+    .sms-body.show {
+        display: block;
+    }
+    
+    .code-block {
+        background: var(--bg-primary);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 0.7rem;
+        color: var(--accent-blue-light);
+        display: inline-block;
+        margin: 0.125rem 0;
+    }
+    
+    .quick-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    
+    .quick-actions .btn {
+        flex: 1;
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 0.625rem;
+    }
+    
+    @media (max-width: 968px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        .stat-value {
+            font-size: 1.25rem;
+        }
+        .job-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .quick-actions {
+            flex-direction: column;
+        }
+        .welcome-section {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="welcome-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Employer Dashboard</h1>
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+            </div>
+            <div>
+                <a href="{% url 'jobs:create_job' %}" class="btn btn-primary" style="font-size: 0.875rem; padding: 0.625rem 1.25rem;">Post New Job</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_jobs|default:"0" }}</div>
+            <div class="stat-label">Total Jobs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ active_jobs|default:"0" }}</div>
+            <div class="stat-label">Active Jobs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ completed_jobs|default:"0" }}</div>
+            <div class="stat-label">Completed Jobs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_matches|default:"0" }}</div>
+            <div class="stat-label">Applications</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div>
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h3>Company Profile</h3>
+                </div>
+                <div class="profile-body">
+                    <div class="profile-avatar">{{ user.username|make_list|first|upper }}</div>
+                    <div class="profile-name">{{ profile.company_name|default:user.username }}</div>
+                    <div class="profile-location">{{ user.profile.location|default:"Location not set" }}</div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">Contact</span>
+                        <span class="info-value">{{ user.profile.phone_number }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ user.email }}</span>
+                    </div>
+                    {% if profile.website %}
+                    <div class="info-row">
+                        <span class="info-label">Website</span>
+                        <span class="info-value">{{ profile.website|truncatechars:25 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if profile.business_registration %}
+                    <div class="info-row">
+                        <span class="info-label">Registration</span>
+                        <span class="info-value">{{ profile.business_registration|truncatechars:20 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'employers:edit_profile' %}" class="edit-profile-link">Edit Company Profile</a>
+                </div>
+            </div>
+            
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h3>Profile Completion</h3>
+                </div>
+                <div class="profile-body">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">Complete your profile</span>
+                        <span style="font-size: 0.7rem; font-weight: 600; color: var(--accent-blue-light);">
+                            {% if profile.company_name and profile.website and profile.business_registration %}100%
+                            {% elif profile.company_name and profile.website %}70%
+                            {% elif profile.company_name %}40%
+                            {% else %}20%
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {% if profile.company_name and profile.website and profile.business_registration %}100{% elif profile.company_name and profile.website %}70{% elif profile.company_name %}40{% else %}20{% endif %}%;"></div>
+                    </div>
+                    <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        {% if not profile.company_name %}
+                        Add company name to complete your profile
+                        {% elif not profile.website %}
+                        Add website to complete your profile
+                        {% elif not profile.business_registration %}
+                        Add business registration to complete your profile
+                        {% else %}
+                        Profile complete
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="sms-commands">
+                <div class="sms-header" onclick="toggleSMSCommands()">
+                    <span>SMS Commands</span>
+                    <span id="smsToggleIcon">▼</span>
+                </div>
+                <div class="sms-body" id="smsCommandsPanel">
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.75rem;">Send to 0700-000-000</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div><code class="code-block">POST|Title|Desc|Location|Budget|Skills</code></div>
+                        <div><code class="code-block">MYJOBS</code> - View active jobs</div>
+                        <div><code class="code-block">APPLICANTS [job_id]</code> - View applicants</div>
+                        <div><code class="code-block">ACCEPT [id]</code> - Accept applicant</div>
+                        <div><code class="code-block">REJECT [id]</code> - Reject applicant</div>
+                        <div><code class="code-block">COMPLETE [id] [rating]</code> - Complete job</div>
+                        <div><code class="code-block">HELP</code> - All commands</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="section-header">
+                <h3>Recent Applications</h3>
+                <span class="section-count">{{ recent_matches|length }} pending</span>
+            </div>
+            
+            {% if recent_matches %}
+                {% for match in recent_matches|slice:":5" %}
+                    <div class="applicant-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div class="applicant-name">{{ match.worker.get_full_name|default:match.worker.username }}</div>
+                                <div class="applicant-detail">For: {{ match.job_request.title }}</div>
+                                <div class="applicant-detail">Applied: {{ match.created_at|timesince }} ago</div>
+                                <div style="margin-top: 0.5rem;">
+                                    <span class="match-badge">{{ match.match_score }}% match</span>
+                                </div>
+                            </div>
+                            <div>
+                                <a href="{% url 'jobs:job_detail' match.job_request.id %}" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">View</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>No applications yet</p>
+                    <small>Post a job to receive applications</small>
+                    <div style="margin-top: 0.75rem;">
+                        <a href="{% url 'jobs:create_job' %}" class="btn btn-primary" style="font-size: 0.7rem;">Post a Job</a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="section-header" style="margin-top: 1.5rem;">
+                <h3>Active Jobs</h3>
+                <a href="{% url 'jobs:my_jobs' %}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.7rem;">View All</a>
+            </div>
+            
+            {% if my_jobs %}
+                {% for job in my_jobs|slice:":5" %}
+                    <div class="job-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div class="job-title">{{ job.title }}</div>
+                                <div class="job-meta">
+                                    <span>{{ job.location }}</span>
+                                    <span>KES {{ job.budget|default:"Negotiable" }}</span>
+                                    <span>Posted {{ job.created_at|date:"M d, Y" }}</span>
+                                </div>
+                                <div style="margin-top: 0.5rem;">
+                                    <span class="match-badge">{{ job.matches.count }} applicant{% if job.matches.count != 1 %}s{% endif %}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">View</a>
+                                <a href="{% url 'jobs:edit_job' job.id %}" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Edit</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>No active jobs</p>
+                    <small>Post your first job to start hiring</small>
+                    <div style="margin-top: 0.75rem;">
+                        <a href="{% url 'jobs:create_job' %}" class="btn btn-primary" style="font-size: 0.7rem;">Post a Job</a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="section-header" style="margin-top: 1.5rem;">
+                <h3>Quick Actions</h3>
+            </div>
+            <div class="quick-actions">
+                <a href="{% url 'jobs:create_job' %}" class="btn btn-primary">Post a Job</a>
+                <a href="{% url 'jobs:my_jobs' %}" class="btn btn-secondary">View All Jobs</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSMSCommands() {
+        var panel = document.getElementById('smsCommandsPanel');
+        var icon = document.getElementById('smsToggleIcon');
+        if (panel.classList.contains('show')) {
+            panel.classList.remove('show');
+            icon.textContent = '▼';
+        } else {
+            panel.classList.add('show');
+            icon.textContent = '▲';
+        }
+    }
+</script>
+{% endblock %}

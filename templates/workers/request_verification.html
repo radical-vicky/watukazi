@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Request Verification{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verify-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    .info-card {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card p {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    
+    .phone-number {
+        font-family: monospace;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--accent-blue-light);
+        background: var(--bg-primary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="verify-container">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Request Verification</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Get verified to build trust with employers</p>
+        </div>
+        
+        <div class="info-card">
+            <p>A verification code will be sent to your phone number: <strong class="phone-number">{{ user.profile.phone_number }}</strong></p>
+            <p style="margin-top: 0.5rem;">Standard SMS rates apply</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">Send Verification Code</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Code via SMS</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

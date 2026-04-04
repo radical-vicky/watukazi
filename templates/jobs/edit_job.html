@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Job{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.5rem;
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem;
+        background: var(--bg-primary);
+    }
+    
+    .skill-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.5rem;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .skill-checkbox:hover {
+        background: var(--bg-tertiary);
+    }
+    
+    .skill-checkbox input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    
+    .skill-checkbox span {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    
+    .current-skills {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .danger-zone {
+        margin-top: 1.5rem;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .danger-header {
+        background: rgba(239, 68, 68, 0.1);
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--accent-red);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .danger-body {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 640px) {
+        .skills-grid {
+            grid-template-columns: 1fr;
+        }
+        .action-buttons {
+            flex-direction: column;
+        }
+        .danger-body {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Edit Job</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Update your job posting</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">Job Information</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-section">
+                        <div class="form-section-title">Basic Information</div>
+                        <div class="form-group">
+                            <label class="form-label">Job Title</label>
+                            <input type="text" name="title" class="form-input" value="{{ job.title }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Job Description</label>
+                            <textarea name="description" class="form-textarea" rows="6" required>{{ job.description }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <div class="form-section-title">Location & Compensation</div>
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-input" value="{{ job.location }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Budget (KES)</label>
+                            <input type="number" name="budget" class="form-input" value="{{ job.budget }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration (Days)</label>
+                            <input type="number" name="duration_days" class="form-input" value="{{ job.duration_days }}" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <div class="form-section-title">Required Skills</div>
+                        <div class="current-skills">
+                            <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem;">Currently selected:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                {% for skill in job.required_skills.all %}
+                                    <span class="badge badge-info">{{ skill.name }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="skills-grid">
+                            {% for skill in skills %}
+                                <label class="skill-checkbox">
+                                    <input type="checkbox" name="required_skills" value="{{ skill.id }}" {% if skill in job.required_skills.all %}checked{% endif %}>
+                                    <span>{{ skill.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="submit" class="btn btn-primary" style="flex: 2;">Update Job</button>
+                        <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="danger-zone">
+            <div class="danger-header">Danger Zone</div>
+            <div class="danger-body">
+                <div>
+                    <strong style="font-size: 0.875rem;">Cancel Job Posting</strong>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">Once cancelled, this job will no longer be visible to workers.</p>
+                </div>
+                <form method="post" action="{% url 'jobs:delete_job' job.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline" style="border-color: var(--accent-red); color: var(--accent-red);" onclick="return confirm('Are you sure you want to cancel this job?')">Cancel Job</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

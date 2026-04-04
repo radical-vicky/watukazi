@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        max-width: 600px;
+        margin: 0 auto;
+        text-align: center;
+        padding: 2rem 0;
+    }
+    
+    .welcome-card {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, var(--text-primary), var(--accent-blue-light));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .user-type-badge {
+        display: inline-block;
+        padding: 0.375rem 1rem;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--accent-blue-light);
+        margin-top: 0.5rem;
+    }
+    
+    .action-section {
+        margin-top: 2rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .info-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: left;
+    }
+    
+    .info-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .info-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .info-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .info-list li::before {
+        content: "✓";
+        color: var(--accent-blue-light);
+        font-size: 0.65rem;
+    }
+    
+    .sms-note {
+        background: rgba(59, 130, 246, 0.05);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        text-align: center;
+    }
+    
+    .sms-note p {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .sms-note strong {
+        color: var(--accent-blue-light);
+    }
+    
+    @media (max-width: 640px) {
+        .welcome-card {
+            padding: 1.5rem;
+        }
+        .welcome-title {
+            font-size: 1.5rem;
+        }
+        .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .info-card {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-container">
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <h1 class="welcome-title">Welcome to Watukazi</h1>
+            <div class="user-type-badge">
+                {% if user_type == 'worker' %}
+                    Worker Account
+                {% elif user_type == 'employer' %}
+                    Employer Account
+                {% else %}
+                    Administrator Account
+                {% endif %}
+            </div>
+            
+            <div class="action-section">
+                <div class="action-buttons">
+                    {% if user_type == 'worker' %}
+                        <a href="{% url 'workers:dashboard' %}" class="btn btn-primary" style="min-width: 200px;">Go to Worker Dashboard</a>
+                    {% elif user_type == 'employer' %}
+                        <a href="{% url 'employers:dashboard' %}" class="btn btn-primary" style="min-width: 200px;">Go to Employer Dashboard</a>
+                    {% else %}
+                        <a href="/admin/" class="btn btn-primary" style="min-width: 200px;">Go to Admin Panel</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions Card -->
+        <div class="info-card">
+            <div class="info-title">Quick Actions</div>
+            <ul class="info-list">
+                {% if user_type == 'worker' %}
+                    <li>Browse and apply for jobs</li>
+                    <li>Add skills to your profile</li>
+                    <li>Update your availability status</li>
+                    <li>Track your applications</li>
+                    <li>Receive SMS job alerts</li>
+                {% elif user_type == 'employer' %}
+                    <li>Post new job opportunities</li>
+                    <li>Review worker applications</li>
+                    <li>Accept or reject applicants</li>
+                    <li>Rate workers after job completion</li>
+                    <li>Receive SMS notifications</li>
+                {% else %}
+                    <li>Manage users and permissions</li>
+                    <li>Monitor system activity</li>
+                    <li>Review job postings</li>
+                    <li>Handle disputes and reports</li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <!-- SMS Note -->
+        <div class="sms-note">
+            <p>Send <strong>HELP</strong> to <strong>0700-000-000</strong> to access Watukazi via SMS</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
