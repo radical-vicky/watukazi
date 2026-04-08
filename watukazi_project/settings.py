@@ -213,13 +213,13 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 # Login/Logout redirects
-LOGIN_REDIRECT_URL = '/dashboard/'
+
 LOGOUT_REDIRECT_URL = '/'
 # Change LOGIN_URL to point to worker login
 LOGIN_URL = '/accounts/worker/login/'
 
 # Also set the redirect URL after login
-LOGIN_REDIRECT_URL = '/'
+#LOGIN_REDIRECT_URL = '/'
 
 # ============ CRISPY FORMS CONFIGURATION ============
 

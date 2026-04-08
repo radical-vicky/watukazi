@@ -38,9 +38,10 @@ class SMSSettings(models.Model):
     def __str__(self):
         return f"SMS Number: {self.phone_number}"
 
+# Fixed signal - only creates profile if it doesn't exist
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+    if created and not hasattr(instance, 'profile'):
         Profile.objects.create(
             user=instance,
             phone_number=f"TEMP_{instance.id}",

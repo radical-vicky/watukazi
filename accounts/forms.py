@@ -114,7 +114,7 @@ class EmployerSignupForm(UserCreationForm):
             if not created:
                 # Update existing profile
                 profile.phone_number = self.cleaned_data['phone_number']
-                profile.user_type = 'employer'
+                profile.user_type = 'employer'  # Force to employer
                 profile.location = self.cleaned_data.get('location', '')
                 profile.save()
             

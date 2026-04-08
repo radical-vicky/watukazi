@@ -4,6 +4,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib import messages
 from django.urls import reverse
 from .forms import WorkerSignupForm, EmployerSignupForm
+from .models import Profile
 
 def home_page(request):
     return render(request, 'home.html')
@@ -41,14 +42,33 @@ def worker_login(request):
     # Get the next parameter from the URL
     next_url = request.GET.get('next', '')
     
+    # If user is already logged in
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'profile'):
+            if request.user.profile.user_type == 'worker':
+                return redirect('workers:dashboard')
+            elif request.user.profile.user_type == 'employer':
+                return redirect('employers:dashboard')
+    
     if request.method == 'POST':
         username = request.POST.get('login')
         password = request.POST.get('password')
         
+        # Try to authenticate
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            if hasattr(user, 'profile') and user.profile.user_type == 'worker':
+            # Check if user has a profile
+            if not hasattr(user, 'profile'):
+                # Create profile if missing
+                Profile.objects.create(
+                    user=user,
+                    phone_number=f"AUTO_{user.id}",
+                    user_type='worker'
+                )
+            
+            # Check if user is a worker
+            if user.profile.user_type == 'worker':
                 login(request, user)
                 messages.success(request, f"Welcome back {user.username}!")
                 
@@ -59,7 +79,7 @@ def worker_login(request):
             else:
                 messages.error(request, "This account is not a worker account. Please use the employer login page.")
         else:
-            messages.error(request, "Invalid username or password.")
+            messages.error(request, "Invalid username or password. Please try again.")
     
     return render(request, 'account/worker_login.html', {'next': next_url})
 
@@ -68,14 +88,47 @@ def employer_login(request):
     # Get the next parameter from the URL
     next_url = request.GET.get('next', '')
     
+    # If user is already logged in
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'profile'):
+            if request.user.profile.user_type == 'employer':
+                return redirect('employers:dashboard')
+            elif request.user.profile.user_type == 'worker':
+                return redirect('workers:dashboard')
+    
     if request.method == 'POST':
         username = request.POST.get('login')
         password = request.POST.get('password')
         
+        # Debug: Print to console
+        print(f"Employer login attempt - Username: {username}")
+        
+        # Try to authenticate
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            if hasattr(user, 'profile') and user.profile.user_type == 'employer':
+            # Check if user has a profile
+            if not hasattr(user, 'profile'):
+                # Create profile if missing
+                Profile.objects.create(
+                    user=user,
+                    phone_number=f"AUTO_{user.id}",
+                    user_type='employer'
+                )
+                print(f"Created missing profile for {user.username}")
+            
+            # Check if employer profile exists, if yes, ensure user_type is employer
+            from employers.models import EmployerProfile
+            if EmployerProfile.objects.filter(user=user).exists():
+                if user.profile.user_type != 'employer':
+                    user.profile.user_type = 'employer'
+                    user.profile.save()
+                    print(f"Fixed user type to employer for {user.username}")
+            
+            print(f"User found: {user.username}, User type: {user.profile.user_type}")
+            
+            # Check if user is an employer
+            if user.profile.user_type == 'employer':
                 login(request, user)
                 messages.success(request, f"Welcome back {user.username}!")
                 
@@ -84,8 +137,16 @@ def employer_login(request):
                     return redirect(next_url)
                 return redirect('employers:dashboard')
             else:
-                messages.error(request, "This account is not an employer account. Please use the worker login page.")
+                messages.error(request, f"This account is a {user.profile.user_type} account. Please use the correct login page.")
         else:
-            messages.error(request, "Invalid username or password.")
+            print("Authentication failed")
+            messages.error(request, "Invalid username or password. Please try again.")
     
     return render(request, 'account/employer_login.html', {'next': next_url})
+
+# Custom logout view
+def custom_logout(request):
+    from django.contrib.auth import logout
+    logout(request)
+    messages.success(request, "You have been successfully logged out.")
+    return redirect('accounts:home')

@@ -9,9 +9,13 @@ from accounts.models import Profile
 @login_required
 def dashboard(request):
     # Check if user is employer
+    if not hasattr(request.user, 'profile'):
+        messages.error(request, "Profile not found. Please contact support.")
+        return redirect('accounts:home')
+    
     if request.user.profile.user_type != 'employer':
         messages.error(request, "Access denied. This page is for employers only.")
-        return redirect('/')
+        return redirect('accounts:home')
     
     # Create employer profile if it doesn't exist
     employer_profile, created = EmployerProfile.objects.get_or_create(user=request.user)
@@ -46,9 +50,9 @@ def dashboard(request):
 @login_required
 def edit_profile(request):
     """Edit company profile page"""
-    if request.user.profile.user_type != 'employer':
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'employer':
         messages.error(request, "Access denied.")
-        return redirect('/')
+        return redirect('accounts:home')
     
     employer_profile, created = EmployerProfile.objects.get_or_create(user=request.user)
     
@@ -60,6 +64,10 @@ def edit_profile(request):
 @login_required
 def update_company_info(request):
     if request.method == 'POST':
+        if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'employer':
+            messages.error(request, "Access denied.")
+            return redirect('accounts:home')
+        
         employer, created = EmployerProfile.objects.get_or_create(user=request.user)
         employer.company_name = request.POST.get('company_name', '')
         employer.business_registration = request.POST.get('business_registration', '')
