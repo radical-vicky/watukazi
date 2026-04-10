@@ -1,3 +1,5 @@
+# accounts/views.py - Complete updated version
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
@@ -23,7 +25,7 @@ def worker_signup(request):
         form = WorkerSignupForm()
     return render(request, 'account/worker_signup.html', {'form': form})
 
-# Custom Employer Signup View
+# Custom Employer Signup View - FIXED
 def employer_signup(request):
     if request.method == 'POST':
         form = EmployerSignupForm(request.POST)
@@ -31,18 +33,30 @@ def employer_signup(request):
             user = form.save()
             user.backend = 'django.contrib.auth.backends.ModelBackend'
             login(request, user)
-            messages.success(request, f"Welcome {user.first_name}! You have successfully registered as an EMPLOYER.")
-            return redirect('employers:dashboard')
+            
+            # Verify the user type after login
+            if hasattr(user, 'profile'):
+                print(f"User {user.username} registered as: {user.profile.user_type}")
+                if user.profile.user_type == 'employer':
+                    messages.success(request, f"Welcome {user.first_name}! You have successfully registered as an EMPLOYER.")
+                    return redirect('employers:dashboard')
+                else:
+                    # Force update if needed
+                    user.profile.user_type = 'employer'
+                    user.profile.save()
+                    messages.success(request, f"Welcome {user.first_name}! You have successfully registered as an EMPLOYER.")
+                    return redirect('employers:dashboard')
+            else:
+                messages.error(request, "Profile creation failed. Please contact support.")
+                return redirect('accounts:home')
     else:
         form = EmployerSignupForm()
     return render(request, 'account/employer_signup.html', {'form': form})
 
 # Custom Worker Login View
 def worker_login(request):
-    # Get the next parameter from the URL
     next_url = request.GET.get('next', '')
     
-    # If user is already logged in
     if request.user.is_authenticated:
         if hasattr(request.user, 'profile'):
             if request.user.profile.user_type == 'worker':
@@ -54,25 +68,20 @@ def worker_login(request):
         username = request.POST.get('login')
         password = request.POST.get('password')
         
-        # Try to authenticate
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            # Check if user has a profile
             if not hasattr(user, 'profile'):
-                # Create profile if missing
                 Profile.objects.create(
                     user=user,
                     phone_number=f"AUTO_{user.id}",
                     user_type='worker'
                 )
             
-            # Check if user is a worker
             if user.profile.user_type == 'worker':
                 login(request, user)
                 messages.success(request, f"Welcome back {user.username}!")
                 
-                # If there's a next URL, redirect there
                 if next_url:
                     return redirect(next_url)
                 return redirect('workers:dashboard')
@@ -83,12 +92,10 @@ def worker_login(request):
     
     return render(request, 'account/worker_login.html', {'next': next_url})
 
-# Custom Employer Login View
+# Custom Employer Login View - FIXED
 def employer_login(request):
-    # Get the next parameter from the URL
     next_url = request.GET.get('next', '')
     
-    # If user is already logged in
     if request.user.is_authenticated:
         if hasattr(request.user, 'profile'):
             if request.user.profile.user_type == 'employer':
@@ -100,16 +107,12 @@ def employer_login(request):
         username = request.POST.get('login')
         password = request.POST.get('password')
         
-        # Debug: Print to console
         print(f"Employer login attempt - Username: {username}")
         
-        # Try to authenticate
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            # Check if user has a profile
             if not hasattr(user, 'profile'):
-                # Create profile if missing
                 Profile.objects.create(
                     user=user,
                     phone_number=f"AUTO_{user.id}",
@@ -117,7 +120,7 @@ def employer_login(request):
                 )
                 print(f"Created missing profile for {user.username}")
             
-            # Check if employer profile exists, if yes, ensure user_type is employer
+            # Fix user type if employer profile exists
             from employers.models import EmployerProfile
             if EmployerProfile.objects.filter(user=user).exists():
                 if user.profile.user_type != 'employer':
@@ -127,12 +130,10 @@ def employer_login(request):
             
             print(f"User found: {user.username}, User type: {user.profile.user_type}")
             
-            # Check if user is an employer
             if user.profile.user_type == 'employer':
                 login(request, user)
                 messages.success(request, f"Welcome back {user.username}!")
                 
-                # If there's a next URL, redirect there
                 if next_url:
                     return redirect(next_url)
                 return redirect('employers:dashboard')
@@ -144,7 +145,6 @@ def employer_login(request):
     
     return render(request, 'account/employer_login.html', {'next': next_url})
 
-# Custom logout view
 def custom_logout(request):
     from django.contrib.auth import logout
     logout(request)

@@ -8,11 +8,26 @@ from accounts.models import Profile
 
 @login_required
 def dashboard(request):
-    # Check if user is employer
+    """Employer dashboard view"""
+    print(f"Dashboard accessed by: {request.user.username}")
+    print(f"Has profile: {hasattr(request.user, 'profile')}")
+    
+    # Ensure profile exists
     if not hasattr(request.user, 'profile'):
         messages.error(request, "Profile not found. Please contact support.")
         return redirect('accounts:home')
     
+    print(f"User type from profile: {request.user.profile.user_type}")
+    
+    # Check if employer profile exists, if yes, ensure user_type is employer
+    from .models import EmployerProfile as EmpProfile
+    if EmpProfile.objects.filter(user=request.user).exists():
+        if request.user.profile.user_type != 'employer':
+            request.user.profile.user_type = 'employer'
+            request.user.profile.save()
+            print(f"Fixed user type to employer for {request.user.username}")
+    
+    # If still not employer, show error
     if request.user.profile.user_type != 'employer':
         messages.error(request, "Access denied. This page is for employers only.")
         return redirect('accounts:home')

@@ -200,7 +200,8 @@
                     </div>
                 {% endif %}
                 
-                <form method="post">
+                <!-- FIXED: Changed from employer_login to employer_signup -->
+                <form method="post" action="{% url 'accounts:employer_signup' %}">
                     {% csrf_token %}
                     
                     <div class="form-row">
