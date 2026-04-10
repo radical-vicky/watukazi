@@ -5,7 +5,8 @@ from . import views
 app_name = 'accounts'
 
 urlpatterns = [
-    path('', views.home_page, name='home'),
+    # Remove the home page path since it's now in home app
+    # path('', views.home_page, name='home'),  # COMMENT THIS OUT OR REMOVE
     
     # Worker URLs
     path('worker/login/', views.worker_login, name='worker_login'),

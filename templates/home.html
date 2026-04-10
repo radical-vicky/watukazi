@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <style>
+    /* Your existing CSS styles remain the same */
     .hero-section {
         position: relative;
         background: linear-gradient(135deg, var(--bg-deep) 0%, var(--bg-primary) 100%);
@@ -28,6 +29,30 @@
         pointer-events: none;
     }
     
+    /* Add carousel/slider styles if you want multiple banners */
+    .hero-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .hero-slide {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+    }
+    
+    .hero-slide.active {
+        opacity: 1;
+    }
+    
+    /* Rest of your existing CSS */
     .hero-content {
         position: relative;
         z-index: 2;
@@ -270,9 +295,23 @@
 
 {% block content %}
 <div class="container">
-    <!-- Hero Section -->
+    <!-- Hero Section with Dynamic Banner -->
     <div class="hero-section">
-        <img src="https://i.pinimg.com/1200x/76/84/5f/76845f36cc94c683ac200315def4f11c.jpg" alt="Watukazi Banner" class="hero-banner">
+        {% if hero_banners %}
+            <!-- Display first active banner -->
+            {% with first_banner=hero_banners.first %}
+                {% if first_banner.image %}
+                    <img src="{{ first_banner.image.url }}" alt="{{ first_banner.alt_text|default:'Watukazi Banner' }}" class="hero-banner">
+                {% else %}
+                    <!-- Fallback to static image if no banner in DB -->
+                    <img src="https://i.pinimg.com/1200x/76/84/5f/76845f36cc94c683ac200315def4f11c.jpg" alt="Watukazi Banner" class="hero-banner">
+                {% endif %}
+            {% endwith %}
+        {% else %}
+            <!-- Fallback image if no banners in database -->
+            <img src="https://i.pinimg.com/1200x/76/84/5f/76845f36cc94c683ac200315def4f11c.jpg" alt="Watukazi Banner" class="hero-banner">
+        {% endif %}
+        
         <div class="hero-content">
             <h1 class="hero-title">watukazi</h1>
             <p class="hero-subtitle">AI for Skills Without Papers</p>
@@ -306,39 +345,63 @@
         <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.75rem;">Standard SMS rates apply</p>
     </div>
 
-    <!-- Features Grid -->
+    <!-- Features Grid with Dynamic Images -->
     <div class="features-grid">
-        <div class="feature-card">
-            <img src="https://i.pinimg.com/736x/40/8c/1e/408c1e88d439388d6bb7cac0f6c0b562.jpg" alt="SMS Access" class="feature-image">
-            <div class="feature-content">
-                <div class="feature-title">SMS-BASED ACCESS</div>
-                <p class="feature-text">No internet or smartphone required. Works on any basic phone with SMS.</p>
-                <code class="feature-code">JOBS</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Find work near you</span>
+        {% if feature_images %}
+            {% for feature in feature_images %}
+                <div class="feature-card">
+                    {% if feature.image %}
+                        <img src="{{ feature.image.url }}" alt="{{ feature.alt_text|default:feature.title }}" class="feature-image">
+                    {% else %}
+                        <!-- Fallback images if specific feature image not available -->
+                        <img src="https://i.pinimg.com/736x/40/8c/1e/408c1e88d439388d6bb7cac0f6c0b562.jpg" alt="{{ feature.title }}" class="feature-image">
+                    {% endif %}
+                    <div class="feature-content">
+                        <div class="feature-title">{{ feature.title|upper }}</div>
+                        <p class="feature-text">{{ feature.description }}</p>
+                        {% if feature.code_example %}
+                            <code class="feature-code">{{ feature.code_example }}</code>
+                            {% if feature.code_description %}
+                                <span style="font-size: 0.7rem; color: var(--text-muted);"> - {{ feature.code_description }}</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Default features if no features in database -->
+            <div class="feature-card">
+                <img src="https://i.pinimg.com/736x/40/8c/1e/408c1e88d439388d6bb7cac0f6c0b562.jpg" alt="SMS Access" class="feature-image">
+                <div class="feature-content">
+                    <div class="feature-title">SMS-BASED ACCESS</div>
+                    <p class="feature-text">No internet or smartphone required. Works on any basic phone with SMS.</p>
+                    <code class="feature-code">JOBS</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Find work near you</span>
+                </div>
             </div>
-        </div>
 
-        <div class="feature-card">
-            <img src="https://i.pinimg.com/1200x/5d/58/36/5d583698b11c6613abb9ab34b783c14f.jpg" alt="AI Matching" class="feature-image">
-            <div class="feature-content">
-                <div class="feature-title">AI-POWERED MATCHING</div>
-                <p class="feature-text">Intelligent system matches workers with jobs based on skills and location.</p>
-                <code class="feature-code">ADD_SKILL Plumbing</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Add your skills</span>
+            <div class="feature-card">
+                <img src="https://i.pinimg.com/1200x/5d/58/36/5d583698b11c6613abb9ab34b783c14f.jpg" alt="AI Matching" class="feature-image">
+                <div class="feature-content">
+                    <div class="feature-title">AI-POWERED MATCHING</div>
+                    <p class="feature-text">Intelligent system matches workers with jobs based on skills and location.</p>
+                    <code class="feature-code">ADD_SKILL Plumbing</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Add your skills</span>
+                </div>
             </div>
-        </div>
 
-        <div class="feature-card">
-            <img src="https://i.pinimg.com/1200x/8a/22/08/8a2208b6b675f01cc31885cfca7b0de0.jpg" alt="Direct Connection" class="feature-image">
-            <div class="feature-content">
-                <div class="feature-title">DIRECT CONNECTION</div>
-                <p class="feature-text">Connect directly with employers or workers without middlemen.</p>
-                <code class="feature-code">APPLY 5</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Apply for a job</span>
+            <div class="feature-card">
+                <img src="https://i.pinimg.com/1200x/8a/22/08/8a2208b6b675f01cc31885cfca7b0de0.jpg" alt="Direct Connection" class="feature-image">
+                <div class="feature-content">
+                    <div class="feature-title">DIRECT CONNECTION</div>
+                    <p class="feature-text">Connect directly with employers or workers without middlemen.</p>
+                    <code class="feature-code">APPLY 5</code> <span style="font-size: 0.7rem; color: var(--text-muted);">- Apply for a job</span>
+                </div>
             </div>
-        </div>
+        {% endif %}
     </div>
 
     <div class="divider"></div>
 
-    <!-- Commands Grid -->
+    <!-- Commands Grid (Static - these don't need to change) -->
     <div class="commands-grid">
         <div class="command-card">
             <div class="command-header">

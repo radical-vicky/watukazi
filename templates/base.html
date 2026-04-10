@@ -483,7 +483,7 @@
                         <a href="#" class="nav-link" onclick="toggleDropdown(event)">SMS Commands</a>
                         <div class="dropdown-menu" id="smsDropdownMenu">
                             <div style="padding: 0.5rem 1rem; border-bottom: 1px solid var(--border-subtle);">
-                                <small style="color: var(--text-muted);">Send to 0700-000-000</small>
+                                <small style="color: var(--text-muted);">Send to {{ sms_number }}</small>
                             </div>
                             <a href="#" class="dropdown-item" onclick="copyCommand('REGISTER worker username password location')">REGISTER worker</a>
                             <a href="#" class="dropdown-item" onclick="copyCommand('ADD_SKILL Plumbing')">ADD_SKILL [skill]</a>
@@ -532,7 +532,7 @@
             <div class="footer-section">
                 <h4>watukazi</h4>
                 <p>AI for Skills Without Papers<br>Connecting informal workers to opportunities via SMS</p>
-                <p style="margin-top: 0.5rem;">SMS: <strong style="color: var(--accent-blue-light);">0700-000-000</strong></p>
+                <p style="margin-top: 0.5rem;">SMS: <strong style="color: var(--accent-blue-light);">{{ sms_number }}</strong></p>
             </div>
             <div class="footer-section">
                 <h4>Quick Links</h4>
@@ -578,7 +578,7 @@
         // Copy command to clipboard
         function copyCommand(command) {
             navigator.clipboard.writeText(command);
-            alert('Command copied: ' + command + '\n\nSend this via SMS to 0700-000-000');
+            alert('Command copied: ' + command + '\n\nSend this via SMS to {{ sms_number }}');
         }
         
         // Auto-dismiss alerts after 5 seconds

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     
     # Local apps - Watukazi System
+    'home',
     'accounts',
     'workers',
     'employers',
