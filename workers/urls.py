@@ -13,4 +13,9 @@ urlpatterns = [
     path('manage-skills/', views.manage_skills, name='manage_skills'),
     path('request-verification/', views.request_verification, name='request_verification'),
     path('verify-code/', views.verify_code, name='verify_code'),
+    
+    # New URLs for job confirmation and directions
+    path('confirm-job/<int:match_id>/', views.confirm_job, name='confirm_job'),
+    path('my-confirmations/', views.my_confirmations, name='my_confirmations'),
+    path('upcoming-jobs/', views.my_upcoming_jobs, name='upcoming_jobs'),
 ]

@@ -48,6 +48,67 @@
         margin-bottom: 2rem;
     }
     
+    .pending-card {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid var(--accent-yellow);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .pending-header {
+        background: rgba(245, 158, 11, 0.15);
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .pending-header h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--accent-yellow);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .upcoming-card {
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid var(--accent-blue);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .upcoming-header {
+        background: rgba(59, 130, 246, 0.12);
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .upcoming-header h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--accent-blue-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .directions-preview {
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        max-height: 100px;
+        overflow-y: auto;
+    }
+    
+    .deadline-warning {
+        color: var(--accent-red);
+        font-size: 0.65rem;
+        font-weight: 500;
+    }
+    
     .profile-card {
         background: var(--bg-secondary);
         border: 1px solid var(--border-subtle);
@@ -90,14 +151,6 @@
         font-weight: 700;
         color: white;
         margin-bottom: 1rem;
-        position: relative;
-    }
-    
-    .profile-image {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
     }
     
     .profile-name {
@@ -132,32 +185,6 @@
     .info-value {
         color: var(--text-primary);
         font-weight: 500;
-    }
-    
-    .verification-badge {
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 12px;
-        font-size: 0.65rem;
-        font-weight: 500;
-    }
-    
-    .badge-verified {
-        background: rgba(16, 185, 129, 0.15);
-        color: var(--accent-green);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-    
-    .badge-pending {
-        background: rgba(245, 158, 11, 0.15);
-        color: var(--accent-yellow);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-    
-    .badge-rejected {
-        background: rgba(239, 68, 68, 0.15);
-        color: var(--accent-red);
-        border: 1px solid rgba(239, 68, 68, 0.3);
     }
     
     .skill-tag {
@@ -201,6 +228,15 @@
         margin-bottom: 0.5rem;
     }
     
+    .employer-link {
+        color: var(--accent-blue-light);
+        text-decoration: none;
+    }
+    
+    .employer-link:hover {
+        text-decoration: underline;
+    }
+    
     .match-badge {
         display: inline-block;
         padding: 0.125rem 0.5rem;
@@ -232,10 +268,16 @@
         border: 1px solid rgba(16, 185, 129, 0.3);
     }
     
-    .status-completed {
+    .status-confirmed {
         background: rgba(59, 130, 246, 0.15);
         color: var(--accent-blue-light);
         border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-completed {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
     }
     
     .section-header {
@@ -299,12 +341,24 @@
         font-size: 0.7rem;
     }
     
-    .mt-2 {
+    .directions-summary {
+        background: var(--bg-primary);
+        border-radius: 6px;
+        padding: 0.5rem;
         margin-top: 0.5rem;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        border-left: 2px solid var(--accent-blue);
     }
     
-    .mt-3 {
-        margin-top: 0.75rem;
+    .code {
+        background: var(--bg-primary);
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 0.7rem;
+        color: var(--accent-blue-light);
+        border: 1px solid var(--border-subtle);
     }
     
     @media (max-width: 968px) {
@@ -333,6 +387,97 @@
             </div>
         </div>
     </div>
+
+    <!-- Pending Confirmations Section -->
+    {% if pending_confirmations %}
+        <div class="pending-card">
+            <div class="pending-header">
+                <h3>Action Required - Jobs Needing Your Confirmation</h3>
+            </div>
+            <div class="profile-body">
+                {% for match in pending_confirmations %}
+                    <div class="job-card" style="border-color: var(--accent-yellow);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div class="job-title">
+                                    <a href="{% url 'employers:public_profile' match.job_request.employer.username %}" class="employer-link">
+                                        {{ match.job_request.employer.employer_profile.company_name|default:match.job_request.employer.username }}
+                                    </a> - {{ match.job_request.title }}
+                                </div>
+                                <div class="job-meta">
+                                    <span>Location: {{ match.job_request.location }}</span>
+                                    <span>Budget: KES {{ match.job_request.budget|default:"Negotiable" }}</span>
+                                </div>
+                                {% if match.directions %}
+                                    <div class="directions-summary">
+                                        <strong>Directions:</strong> {{ match.directions|truncatewords:20 }}
+                                    </div>
+                                {% endif %}
+                                {% if match.report_time %}
+                                    <div class="job-meta" style="margin-top: 0.25rem;">
+                                        <span>Report by: {{ match.report_time|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if match.response_deadline %}
+                                    <div class="deadline-warning">
+                                        Confirm before: {{ match.response_deadline|date:"M d, Y H:i" }}
+                                        {% if match.response_deadline < now %}
+                                            (EXPIRED)
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <a href="{% url 'workers:confirm_job' match.id %}" class="btn btn-primary" style="padding: 0.5rem 1rem;">Review and Confirm</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Upcoming Jobs Section -->
+    {% if upcoming_jobs %}
+        <div class="upcoming-card">
+            <div class="upcoming-header">
+                <h3>Upcoming Confirmed Jobs</h3>
+            </div>
+            <div class="profile-body">
+                {% for match in upcoming_jobs %}
+                    <div class="job-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div class="job-title">
+                                    <a href="{% url 'employers:public_profile' match.job_request.employer.username %}" class="employer-link">
+                                        {{ match.job_request.employer.employer_profile.company_name|default:match.job_request.employer.username }}
+                                    </a> - {{ match.job_request.title }}
+                                </div>
+                                <div class="job-meta">
+                                    <span>Location: {{ match.job_request.location }}</span>
+                                    <span>Budget: KES {{ match.job_request.budget|default:"Negotiable" }}</span>
+                                    <span>Report: {{ match.report_time|date:"M d, Y H:i" }}</span>
+                                </div>
+                                {% if match.directions %}
+                                    <div class="directions-summary">
+                                        {{ match.directions|truncatewords:15 }}
+                                    </div>
+                                {% endif %}
+                                {% if match.contact_person %}
+                                    <div class="job-meta" style="margin-top: 0.25rem;">
+                                        <span>Contact: {{ match.contact_person }} - {{ match.contact_phone }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <a href="{% url 'jobs:job_detail' match.job_request.id %}" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 
     <!-- Verification Status Alerts -->
     {% if profile.verification_status == 'pending' %}
@@ -367,8 +512,8 @@
             <div class="stat-label">Skills</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">{{ my_jobs|length }}</div>
-            <div class="stat-label">Applications</div>
+            <div class="stat-value">{{ pending_confirmations|length }}</div>
+            <div class="stat-label">Pending Confirmation</div>
         </div>
     </div>
 
@@ -383,13 +528,13 @@
                 <div class="profile-body">
                     <div class="profile-avatar">
                         {% if profile.profile_image %}
-                            <img src="{{ profile.profile_image.url }}" alt="Profile" class="profile-image">
+                            <img src="{{ profile.profile_image.url }}" alt="Profile" class="profile-image" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                         {% else %}
                             {{ user.username|make_list|first|upper }}
                         {% endif %}
                     </div>
                     <div class="profile-name">{{ user.get_full_name|default:user.username }}</div>
-                    <div class="profile-location">{{ user.profile.location|default:"Location not set" }}</div>
+                    <div class="profile-location">Location: {{ user.profile.location|default:"Not set" }}</div>
                     
                     <div class="info-row">
                         <span class="info-label">Phone</span>
@@ -415,21 +560,11 @@
                         <span class="info-label">Verification</span>
                         <span class="info-value">
                             {% if profile.verification_status == 'verified' %}
-                                <span class="verification-badge badge-verified">Verified</span>
+                                Verified
                             {% elif profile.verification_status == 'pending' %}
-                                <span class="verification-badge badge-pending">Pending</span>
+                                Pending
                             {% else %}
-                                <span class="verification-badge badge-rejected">Rejected</span>
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">ID Number</span>
-                        <span class="info-value">
-                            {% if profile.id_number %}
-                                {{ profile.id_number|slice:":3" }}******
-                            {% else %}
-                                Not provided
+                                Rejected
                             {% endif %}
                         </span>
                     </div>
@@ -438,14 +573,6 @@
                         <a href="{% url 'workers:edit_bio' %}" class="btn btn-secondary" style="flex: 1; text-align: center; font-size: 0.75rem;">Edit Profile</a>
                         <a href="{% url 'workers:manage_skills' %}" class="btn btn-secondary" style="flex: 1; text-align: center; font-size: 0.75rem;">Manage Skills</a>
                     </div>
-                    
-                    {% if profile.verification_status == 'pending' and profile.id_number and profile.id_image %}
-                        <a href="{% url 'workers:request_verification' %}" class="btn btn-primary" style="margin-top: 1rem; width: 100%; text-align: center;">Request Verification</a>
-                    {% elif profile.verification_status == 'pending' %}
-                        <div class="alert-warning alert-info" style="margin-top: 1rem; text-align: center; padding: 0.5rem;">
-                            <small>Upload ID to request verification</small>
-                        </div>
-                    {% endif %}
                     
                     <form method="post" action="{% url 'workers:update_availability' %}" style="margin-top: 1rem;">
                         {% csrf_token %}
@@ -461,7 +588,7 @@
             
             <div class="profile-card">
                 <div class="profile-header">
-                    <h3>Skills</h3>
+                    <h3>My Skills</h3>
                 </div>
                 <div class="profile-body">
                     {% if worker_skills %}
@@ -478,13 +605,28 @@
                     {% endif %}
                 </div>
             </div>
+            
+            <div class="profile-card">
+                <div class="profile-header">
+                    <h3>SMS Quick Actions</h3>
+                </div>
+                <div class="profile-body">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div><code class="code">JOBS</code> - Find available jobs</div>
+                        <div><code class="code">APPLY [job_id]</code> - Apply for job</div>
+                        <div><code class="code">MY_JOBS</code> - View applications</div>
+                        <div><code class="code">CONFIRM [match_id]</code> - Confirm job</div>
+                        <div><code class="code">AVAILABLE</code> - Mark available</div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Right Column - Jobs -->
         <div>
-            <!-- AI Recommended Jobs -->
+            <!-- Recommended Jobs -->
             <div class="section-header">
-                <h3>Recommended Jobs</h3>
+                <h3>Recommended for You</h3>
                 <span class="section-count">{{ recommended_jobs|length }} matches</span>
             </div>
             
@@ -493,14 +635,23 @@
                     <div class="job-card">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                             <div style="flex: 1;">
-                                <div class="job-title">{{ item.job.title }}</div>
+                                <div class="job-title">
+                                    <a href="{% url 'employers:public_profile' item.job.employer.username %}" class="employer-link">
+                                        {{ item.job.employer.employer_profile.company_name|default:item.job.employer.username }}
+                                    </a> - {{ item.job.title }}
+                                </div>
                                 <div class="job-meta">
-                                    <span>{{ item.job.location }}</span>
-                                    <span>KES {{ item.job.budget|default:"Negotiable" }}</span>
-                                    <span>{{ item.job.created_at|timesince }} ago</span>
+                                    <span>Location: {{ item.job.location }}</span>
+                                    <span>Budget: KES {{ item.job.budget|default:"Negotiable" }}</span>
+                                    <span>Posted: {{ item.job.created_at|timesince }} ago</span>
                                 </div>
                                 <div style="margin-top: 0.5rem;">
                                     <span class="match-badge">{{ item.match_score|floatformat:0 }}% Match</span>
+                                    {% if item.job.employer.employer_profile.rating > 0 %}
+                                        <span class="match-badge" style="background: rgba(245, 158, 11, 0.1);">
+                                            Rating: {{ item.job.employer.employer_profile.rating|floatformat:1 }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div>
@@ -511,14 +662,14 @@
                 {% endfor %}
             {% else %}
                 <div class="empty-state">
-                    <p>No recommendations</p>
-                    <small>Add skills to get personalized matches</small>
+                    <p>No recommendations yet</p>
+                    <small>Add more skills to get personalized matches</small>
                 </div>
             {% endif %}
             
             <!-- Available Jobs -->
             <div class="section-header" style="margin-top: 1.5rem;">
-                <h3>Available Jobs</h3>
+                <h3>Available Jobs Near You</h3>
                 <a href="{% url 'jobs:search_jobs' %}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.7rem;">Search</a>
             </div>
             
@@ -527,10 +678,14 @@
                     <div class="job-card">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                             <div style="flex: 1;">
-                                <div class="job-title">{{ job.title }}</div>
+                                <div class="job-title">
+                                    <a href="{% url 'employers:public_profile' job.employer.username %}" class="employer-link">
+                                        {{ job.employer.employer_profile.company_name|default:job.employer.username }}
+                                    </a> - {{ job.title }}
+                                </div>
                                 <div class="job-meta">
-                                    <span>{{ job.location }}</span>
-                                    <span>KES {{ job.budget|default:"Negotiable" }}</span>
+                                    <span>Location: {{ job.location }}</span>
+                                    <span>Budget: KES {{ job.budget|default:"Negotiable" }}</span>
                                 </div>
                             </div>
                             <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Apply</a>
@@ -539,8 +694,8 @@
                 {% endfor %}
             {% else %}
                 <div class="empty-state">
-                    <p>No jobs available</p>
-                    <small>Check back later</small>
+                    <p>No jobs available in your area</p>
+                    <small>Check back later or update your location</small>
                 </div>
             {% endif %}
             
@@ -555,36 +710,34 @@
                     <div class="job-card">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                             <div style="flex: 1;">
-                                <div class="job-title">{{ match.job_request.title }}</div>
+                                <div class="job-title">
+                                    <a href="{% url 'employers:public_profile' match.job_request.employer.username %}" class="employer-link">
+                                        {{ match.job_request.employer.employer_profile.company_name|default:match.job_request.employer.username }}
+                                    </a> - {{ match.job_request.title }}
+                                </div>
                                 <div class="job-meta">
                                     <span>Applied {{ match.created_at|timesince }} ago</span>
                                 </div>
                                 <div style="margin-top: 0.5rem;">
                                     <span class="status-badge 
                                         {% if match.status == 'accepted' %}status-accepted
+                                        {% elif match.status == 'confirmed' %}status-confirmed
                                         {% elif match.status == 'pending' %}status-pending
-                                        {% else %}status-completed{% endif %}">
+                                        {% elif match.status == 'completed' %}status-completed
+                                        {% else %}status-pending{% endif %}">
                                         {{ match.get_status_display|upper }}
                                     </span>
-                                    <span class="match-badge" style="margin-left: 0.5rem;">Match: {{ match.match_score }}%</span>
+                                    {% if match.status == 'accepted' %}
+                                        <span class="match-badge" style="margin-left: 0.5rem;">Needs Confirmation</span>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% if match.status == 'pending' %}
-                                <form method="post" action="{% url 'jobs:worker_respond' match.id %}" style="display: flex; gap: 0.5rem;">
-                                    {% csrf_token %}
-                                    <button type="submit" name="response" value="accept" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Accept</button>
-                                    <button type="submit" name="response" value="reject" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Decline</button>
-                                </form>
-                            {% elif match.status == 'accepted' %}
-                                <div style="text-align: right;">
-                                    <span class="status-badge status-accepted">Confirmed</span>
-                                    <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.25rem;">Employer will contact you</div>
-                                </div>
-                            {% elif match.status == 'completed' %}
-                                <div style="text-align: right;">
-                                    <span class="status-badge status-completed">Completed</span>
-                                    <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.25rem;">Job finished</div>
-                                </div>
+                            {% if match.status == 'accepted' %}
+                                <a href="{% url 'workers:confirm_job' match.id %}" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Confirm Now</a>
+                            {% elif match.status == 'pending' %}
+                                <span class="status-badge status-pending">Waiting for employer response</span>
+                            {% else %}
+                                <a href="{% url 'jobs:job_detail' match.job_request.id %}" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">View</a>
                             {% endif %}
                         </div>
                     </div>

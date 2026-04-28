@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from workers.models import Skill
+from django.utils import timezone
+from datetime import timedelta
 
 class JobRequest(models.Model):
     STATUS_CHOICES = (
@@ -108,6 +110,7 @@ class JobRequest(models.Model):
         
         return created_matches
 
+
 class JobMatch(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending Worker Response'),
@@ -130,6 +133,15 @@ class JobMatch(models.Model):
     worker_feedback = models.TextField(blank=True)
     employer_feedback = models.TextField(blank=True)
     
+    # New fields for directions and procedures
+    directions = models.TextField(blank=True, null=True, help_text="Directions for the worker to reach the job site")
+    procedures = models.TextField(blank=True, null=True, help_text="Procedures or instructions for the worker")
+    access_code = models.CharField(max_length=50, blank=True, null=True, help_text="Access code or password if needed")
+    contact_person = models.CharField(max_length=200, blank=True, null=True, help_text="Contact person name")
+    contact_phone = models.CharField(max_length=20, blank=True, null=True, help_text="Contact phone number")
+    response_deadline = models.DateTimeField(null=True, blank=True, help_text="Deadline for worker to confirm/respond")
+    report_time = models.DateTimeField(null=True, blank=True, help_text="When worker should report to site")
+    
     def __str__(self):
         return f"Match: {self.job_request.title} - {self.worker.username}"
     
@@ -143,22 +155,50 @@ class JobMatch(models.Model):
             message = f"✅ Worker {self.worker.get_full_name()} has accepted your job!\n"
             message += f"Job: {self.job_request.title}\n"
             message += f"Contact: {self.worker.profile.phone_number}\n"
-            message += f"Login to confirm: http://127.0.0.1:8000/jobs/{self.job_request.id}/"
+            message += f"Login to provide directions: http://127.0.0.1:8000/jobs/{self.job_request.id}/"
             send_sms(self.job_request.employer.profile.phone_number, message)
         except Exception as e:
             print(f"SMS sending failed: {e}")
     
-    def confirm_by_employer(self):
+    def send_acceptance_details(self):
+        """Send SMS with directions and procedures when employer accepts worker"""
+        from sms_simulator.utils import send_sms
+        
+        message = f"✅ JOB ACCEPTED: {self.job_request.title}\n\n"
+        
+        if self.contact_person:
+            message += f"📞 Contact: {self.contact_person} - {self.contact_phone}\n\n"
+        
+        if self.directions:
+            message += f"📍 DIRECTIONS:\n{self.directions}\n\n"
+        
+        if self.procedures:
+            message += f"📋 PROCEDURES:\n{self.procedures}\n\n"
+        
+        if self.access_code:
+            message += f"🔑 Access Code: {self.access_code}\n\n"
+        
+        if self.report_time:
+            message += f"⏰ Report by: {self.report_time.strftime('%Y-%m-%d %H:%M')}\n"
+        
+        if self.response_deadline:
+            message += f"⚠️ Confirm before: {self.response_deadline.strftime('%Y-%m-%d %H:%M')}\n"
+        
+        message += "\nReply: CONFIRM to accept or CANCEL to decline"
+        
+        send_sms(self.worker.profile.phone_number, message)
+    
+    def confirm_by_worker(self):
+        """Worker confirms after receiving directions"""
         self.status = 'confirmed'
         self.save()
         
-        # Send SMS to worker
+        # Send SMS to employer
         try:
             from sms_simulator.utils import send_sms
-            message = f"✅ Congratulations! Your application for '{self.job_request.title}' has been confirmed!\n"
-            message += f"Contact employer: {self.job_request.employer.profile.phone_number}\n"
-            message += f"Good luck with the job!"
-            send_sms(self.worker.profile.phone_number, message)
+            message = f"✅ Worker {self.worker.get_full_name()} has confirmed job '{self.job_request.title}'.\n"
+            message += f"They will report as directed."
+            send_sms(self.job_request.employer.profile.phone_number, message)
         except Exception as e:
             print(f"SMS sending failed: {e}")
     
@@ -237,3 +277,15 @@ class JobMatch(models.Model):
             stars = "⭐" * self.employer_rating
             return f"{self.employer_rating}/5 {stars}"
         return "Not rated yet"
+    
+    def is_deadline_expired(self):
+        """Check if response deadline has passed"""
+        if self.response_deadline:
+            return timezone.now() > self.response_deadline
+        return False
+    
+    def get_directions_summary(self):
+        """Get a short summary of directions"""
+        if self.directions:
+            return self.directions[:150] + '...' if len(self.directions) > 150 else self.directions
+        return "No directions provided"

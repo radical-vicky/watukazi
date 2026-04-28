@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}My Upcoming Jobs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .jobs-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .job-section {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .job-item {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .job-item.upcoming {
+        border-left: 3px solid var(--accent-green);
+    }
+    
+    .job-item.past {
+        border-left: 3px solid var(--text-muted);
+        opacity: 0.7;
+    }
+    
+    .job-content {
+        padding: 1rem;
+    }
+    
+    .directions-short {
+        background: var(--bg-primary);
+        border-radius: 6px;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="jobs-container">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">My Jobs</h1>
+            <p style="color: var(--text-secondary);">Track your upcoming and past confirmed jobs</p>
+        </div>
+        
+        <!-- Upcoming Jobs -->
+        <div class="job-section">
+            <div class="section-title">📅 Upcoming Jobs</div>
+            {% if upcoming_jobs %}
+                {% for match in upcoming_jobs %}
+                    <div class="job-item upcoming">
+                        <div class="job-content">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <strong style="font-size: 1rem;">{{ match.job_request.title }}</strong>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                        📍 {{ match.job_request.location }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span style="background: rgba(59, 130, 246, 0.15); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem;">
+                                        {{ match.report_time|date:"M d, H:i" }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {% if match.directions %}
+                                <div class="directions-short">
+                                    📍 {{ match.directions|truncatewords:20 }}
+                                </div>
+                            {% endif %}
+                            
+                            {% if match.contact_person %}
+                                <div style="margin-top: 0.5rem; font-size: 0.7rem;">
+                                    📞 Contact: {{ match.contact_person }} - {{ match.contact_phone }}
+                                </div>
+                            {% endif %}
+                            
+                            <div style="margin-top: 0.75rem;">
+                                <a href="{% url 'jobs:job_detail' match.job_request.id %}" class="btn btn-secondary" style="font-size: 0.7rem;">View Full Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" style="padding: 2rem;">
+                    <p>No upcoming jobs</p>
+                    <p style="font-size: 0.75rem;">When you confirm a job, it will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Past Jobs -->
+        <div class="job-section">
+            <div class="section-title">⏪ Past Jobs</div>
+            {% if past_jobs %}
+                {% for match in past_jobs %}
+                    <div class="job-item past">
+                        <div class="job-content">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <strong>{{ match.job_request.title }}</strong>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                        📍 {{ match.job_request.location }}
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted);">
+                                    {{ match.report_time|date:"M d, Y" }}
+                                </div>
+                            </div>
+                            <div style="margin-top: 0.75rem;">
+                                <a href="{% url 'jobs:job_detail' match.job_request.id %}" class="btn btn-secondary" style="font-size: 0.7rem;">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" style="padding: 2rem;">
+                    <p>No past jobs</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

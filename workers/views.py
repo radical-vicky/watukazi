@@ -40,6 +40,26 @@ def dashboard(request):
     available_jobs = available_jobs.order_by('-created_at')[:10]
     my_jobs = JobMatch.objects.filter(worker=request.user).order_by('-created_at')
     
+    # Get pending confirmations (jobs that require worker response)
+    pending_confirmations = JobMatch.objects.filter(
+        worker=request.user,
+        status='accepted'
+    ).order_by('response_deadline')
+    
+    # Get upcoming confirmed jobs
+    upcoming_jobs = JobMatch.objects.filter(
+        worker=request.user,
+        status='confirmed',
+        report_time__gte=timezone.now()
+    ).order_by('report_time')[:5]
+    
+    # Get completed jobs for rating
+    completed_jobs = JobMatch.objects.filter(
+        worker=request.user,
+        status='completed',
+        worker_rating__isnull=True
+    )[:5]
+    
     recommended_jobs = []
     all_open_jobs = JobRequest.objects.filter(status='open').exclude(id__in=my_jobs.values('job_request_id'))
     
@@ -55,6 +75,9 @@ def dashboard(request):
         'profile': worker_profile,
         'available_jobs': available_jobs,
         'my_jobs': my_jobs,
+        'pending_confirmations': pending_confirmations,
+        'upcoming_jobs': upcoming_jobs,
+        'completed_jobs': completed_jobs,
         'recommended_jobs': sorted(recommended_jobs, key=lambda x: x['match_score'], reverse=True)[:5],
         'skills': Skill.objects.all(),
         'skill_categories': SkillCategory.objects.all(),
@@ -111,9 +134,17 @@ def worker_profile_view(request, username=None):
     worker, created = WorkerProfile.objects.get_or_create(user=worker_user)
     completed_jobs = JobMatch.objects.filter(worker=worker_user, status='completed')
     
+    # Get current active jobs
+    active_jobs = JobMatch.objects.filter(
+        worker=worker_user
+    ).exclude(
+        status__in=['completed', 'cancelled', 'rejected']
+    )
+    
     context = {
         'worker': worker,
         'completed_jobs': completed_jobs,
+        'active_jobs': active_jobs,
         'skills': worker.skills.all(),
     }
     return render(request, 'workers/profile.html', context)
@@ -217,3 +248,86 @@ def verify_code(request):
             messages.error(request, "Invalid verification code. Please try again.")
     
     return render(request, 'workers/verify_code.html')
+
+@login_required
+def confirm_job(request, match_id):
+    """Worker confirms a job after receiving directions"""
+    match = get_object_or_404(JobMatch, id=match_id, worker=request.user)
+    
+    if match.status != 'accepted':
+        messages.error(request, "This job cannot be confirmed at this time.")
+        return redirect('workers:dashboard')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'confirm':
+            match.status = 'confirmed'
+            match.save()
+            
+            # Notify employer
+            from sms_simulator.utils import send_sms
+            message = f"✅ Worker {request.user.get_full_name() or request.user.username} has confirmed job '{match.job_request.title}'. They will report as directed."
+            send_sms(match.job_request.employer.profile.phone_number, message)
+            
+            messages.success(request, f"You have confirmed the job '{match.job_request.title}'. Please report at the specified time and location.")
+            
+        elif action == 'cancel':
+            match.status = 'cancelled'
+            match.save()
+            
+            # Notify employer
+            from sms_simulator.utils import send_sms
+            message = f"❌ Worker {request.user.get_full_name() or request.user.username} has cancelled job '{match.job_request.title}'."
+            send_sms(match.job_request.employer.profile.phone_number, message)
+            
+            messages.info(request, f"You have cancelled the job '{match.job_request.title}'.")
+        
+        return redirect('workers:dashboard')
+    
+    context = {
+        'match': match,
+    }
+    return render(request, 'workers/confirm_job.html', context)
+
+@login_required
+def my_confirmations(request):
+    """View all jobs pending confirmation"""
+    if request.user.profile.user_type != 'worker':
+        messages.error(request, "Access denied.")
+        return redirect('/')
+    
+    pending_confirmations = JobMatch.objects.filter(
+        worker=request.user,
+        status='accepted'
+    ).order_by('response_deadline')
+    
+    context = {
+        'pending_confirmations': pending_confirmations,
+    }
+    return render(request, 'workers/my_confirmations.html', context)
+
+@login_required
+def my_upcoming_jobs(request):
+    """View all upcoming confirmed jobs"""
+    if request.user.profile.user_type != 'worker':
+        messages.error(request, "Access denied.")
+        return redirect('/')
+    
+    upcoming_jobs = JobMatch.objects.filter(
+        worker=request.user,
+        status='confirmed',
+        report_time__gte=timezone.now()
+    ).order_by('report_time')
+    
+    past_jobs = JobMatch.objects.filter(
+        worker=request.user,
+        status='confirmed',
+        report_time__lt=timezone.now()
+    ).order_by('-report_time')
+    
+    context = {
+        'upcoming_jobs': upcoming_jobs,
+        'past_jobs': past_jobs,
+    }
+    return render(request, 'workers/upcoming_jobs.html', context)

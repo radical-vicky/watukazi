@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employer.company_name|default:employer_user.username }} - Employer Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .company-logo {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-dark));
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 1rem;
+    }
+    
+    .company-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 16px;
+    }
+    
+    .company-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .company-location {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .rating-stars {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .stars {
+        color: var(--accent-yellow);
+        font-size: 0.875rem;
+    }
+    
+    .rating-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .rating-count {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-blue-light);
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    
+    .info-header {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-tertiary);
+    }
+    
+    .info-header h3 {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .info-body {
+        padding: 1rem;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .info-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .job-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .job-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateX(2px);
+    }
+    
+    .job-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .job-meta {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .skill-tag {
+        display: inline-block;
+        padding: 0.125rem 0.375rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 4px;
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+    }
+    
+    .review-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .reviewer-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .review-rating {
+        color: var(--accent-yellow);
+        font-size: 0.7rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .review-feedback {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+    
+    .review-date {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .edit-profile-link {
+        display: block;
+        width: 100%;
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .edit-profile-link:hover {
+        border-color: var(--accent-blue);
+        color: var(--accent-blue-light);
+        text-decoration: none;
+    }
+    
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 1.5rem;
+    }
+    
+    @media (max-width: 968px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-container">
+        <div class="profile-header">
+            <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start;">
+                <div class="company-logo">
+                    {% if employer.company_logo %}
+                        <img src="{{ employer.company_logo.url }}" alt="{{ employer.company_name }}">
+                    {% else %}
+                        {{ employer.company_name|default:employer_user.username|make_list|first|upper }}
+                    {% endif %}
+                </div>
+                <div style="flex: 1;">
+                    <div class="company-name">{{ employer.company_name|default:employer_user.username }}</div>
+                    <div class="company-location">
+                        Location: {{ employer_user.profile.location|default:"Not specified" }}
+                    </div>
+                    <div class="rating-stars">
+                        <div class="stars">
+                            Rating: 
+                            {% for i in "12345"|make_list %}
+                                {% if forloop.counter <= employer.rating|floatformat:0|add:"0" %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                            ({{ employer.rating|floatformat:1 }}/5)
+                        </div>
+                        <div class="rating-count">({{ rating_count }} review{{ rating_count|pluralize }})</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ total_jobs }}</div>
+                            <div class="stat-label">Total Jobs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ active_jobs }}</div>
+                            <div class="stat-label">Active Jobs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ completed_jobs }}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ employer.total_jobs_posted }}</div>
+                            <div class="stat-label">Posted</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div>
+                <div class="info-card">
+                    <div class="info-header">
+                        <h3>Company Information</h3>
+                    </div>
+                    <div class="info-body">
+                        {% if employer.company_description %}
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem;">About</div>
+                                <p style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6;">{{ employer.company_description }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="info-row">
+                            <span class="info-label">Contact Person</span>
+                            <span class="info-value">{{ employer_user.get_full_name|default:employer_user.username }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Phone</span>
+                            <span class="info-value">{{ employer_user.profile.phone_number }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email</span>
+                            <span class="info-value">{{ employer_user.email }}</span>
+                        </div>
+                        
+                        {% if employer.industry %}
+                        <div class="info-row">
+                            <span class="info-label">Industry</span>
+                            <span class="info-value">{{ employer.industry }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if employer.employee_count %}
+                        <div class="info-row">
+                            <span class="info-label">Company Size</span>
+                            <span class="info-value">{{ employer.get_employee_count_display }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if employer.year_established %}
+                        <div class="info-row">
+                            <span class="info-label">Established</span>
+                            <span class="info-value">{{ employer.year_established }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if employer.website %}
+                        <div class="info-row">
+                            <span class="info-label">Website</span>
+                            <span class="info-value">
+                                <a href="{{ employer.website }}" target="_blank" style="color: var(--accent-blue-light);">{{ employer.website|truncatechars:30 }}</a>
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if employer.business_registration %}
+                        <div class="info-row">
+                            <span class="info-label">Registration</span>
+                            <span class="info-value">{{ employer.business_registration }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="info-row">
+                            <span class="info-label">Member Since</span>
+                            <span class="info-value">{{ employer_user.date_joined|date:"F j, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if user == employer_user %}
+                    <a href="{% url 'employers:edit_profile' %}" class="edit-profile-link">Edit Company Profile</a>
+                {% endif %}
+            </div>
+            
+            <div>
+                <div class="info-card">
+                    <div class="info-header">
+                        <h3>Active Job Postings</h3>
+                    </div>
+                    <div class="info-body">
+                        {% if jobs %}
+                            {% for job in jobs %}
+                                <div class="job-card">
+                                    <div class="job-title">{{ job.title }}</div>
+                                    <div class="job-meta">
+                                        Location: {{ job.location }} | Budget: KES {{ job.budget|default:"Negotiable" }}
+                                    </div>
+                                    <div class="job-meta" style="margin-top: 0.25rem;">
+                                        Posted: {{ job.created_at|timesince }} ago
+                                    </div>
+                                    <div style="margin-top: 0.5rem;">
+                                        <span class="skill-tag">{{ job.matches.count }} application{{ job.matches.count|pluralize }}</span>
+                                    </div>
+                                    {% if user == employer_user %}
+                                        <div style="margin-top: 0.5rem;">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-secondary" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">View Applications</a>
+                                        </div>
+                                    {% else %}
+                                        <div style="margin-top: 0.5rem;">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-primary" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">Apply Now</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state" style="padding: 1rem; text-align: center;">
+                                <p style="font-size: 0.75rem; color: var(--text-muted);">No active job postings</p>
+                                {% if user == employer_user %}
+                                    <a href="{% url 'jobs:create_job' %}" class="btn btn-primary" style="margin-top: 0.5rem; font-size: 0.7rem;">Post a Job</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <div class="info-header">
+                        <h3>Reviews from Workers</h3>
+                    </div>
+                    <div class="info-body">
+                        {% if recent_reviews %}
+                            {% for review in recent_reviews %}
+                                <div class="review-card">
+                                    <div class="reviewer-name">{{ review.worker.get_full_name|default:review.worker.username }}</div>
+                                    <div class="review-rating">
+                                        {% for i in "12345"|make_list %}
+                                            {% if forloop.counter <= review.employer_rating %}★{% else %}☆{% endif %}
+                                        {% endfor %}
+                                        ({{ review.employer_rating }}/5)
+                                    </div>
+                                    {% if review.worker_feedback %}
+                                        <div class="review-feedback">"{{ review.worker_feedback }}"</div>
+                                    {% endif %}
+                                    <div class="review-date">{{ review.updated_at|date:"M d, Y" }}</div>
+                                    <div class="job-meta" style="margin-top: 0.25rem;">
+                                        Job: {{ review.job_request.title }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state" style="padding: 1rem; text-align: center;">
+                                <p style="font-size: 0.75rem; color: var(--text-muted);">No reviews yet</p>
+                                <p style="font-size: 0.7rem; color: var(--text-muted);">Reviews appear after completed jobs</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

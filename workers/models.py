@@ -71,3 +71,23 @@ class WorkerProfile(models.Model):
     
     def is_verified(self):
         return self.verification_status == 'verified'
+    
+    def get_pending_confirmations(self):
+        """Get jobs that the worker needs to confirm"""
+        from jobs.models import JobMatch
+        return JobMatch.objects.filter(
+            worker=self.user, 
+            status='accepted'
+        ).filter(
+            models.Q(response_deadline__isnull=True) | 
+            models.Q(response_deadline__gte=models.functions.Now())
+        )
+    
+    def get_upcoming_jobs(self):
+        """Get confirmed jobs that are upcoming"""
+        from jobs.models import JobMatch
+        return JobMatch.objects.filter(
+            worker=self.user,
+            status='confirmed',
+            report_time__gte=models.functions.Now()
+        ).order_by('report_time')

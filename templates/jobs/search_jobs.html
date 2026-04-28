@@ -64,6 +64,17 @@
         margin-bottom: 0.5rem;
     }
     
+    .employer-link {
+        color: var(--accent-blue-light);
+        text-decoration: none;
+        font-size: 0.7rem;
+        font-weight: normal;
+    }
+    
+    .employer-link:hover {
+        text-decoration: underline;
+    }
+    
     .job-meta {
         display: flex;
         flex-wrap: wrap;
@@ -122,7 +133,7 @@
 <div class="container">
     <div style="margin-bottom: 1.5rem;">
         <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Search Jobs</h1>
-        <p style="color: var(--text-secondary); font-size: 0.875rem;">Find jobs that match your skills</p>
+        <p style="color: var(--text-secondary); font-size: 0.875rem;">Find jobs that match your skills and location</p>
     </div>
     
     <div class="search-section">
@@ -147,11 +158,22 @@
             <div class="job-card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                     <div style="flex: 1;">
-                        <div class="job-title">{{ job.title }}</div>
+                        <div class="job-title">
+                            {{ job.title }}
+                            <span style="font-size: 0.65rem; font-weight: normal;">
+                                by <a href="{% url 'employers:public_profile' job.employer.username %}" class="employer-link">
+                                    {{ job.employer.employer_profile.company_name|default:job.employer.username }}
+                                </a>
+                                {% if job.employer.employer_profile.rating > 0 %}
+                                    (Rating: {{ job.employer.employer_profile.rating|floatformat:1 }}/5)
+                                {% endif %}
+                            </span>
+                        </div>
                         <div class="job-meta">
-                            <span>📍 {{ job.location }}</span>
-                            <span>💰 KES {{ job.budget|default:"Negotiable" }}</span>
-                            <span>📅 Posted {{ job.created_at|timesince }} ago</span>
+                            <span>Location: {{ job.location }}</span>
+                            <span>Budget: KES {{ job.budget|default:"Negotiable" }}</span>
+                            <span>Posted: {{ job.created_at|timesince }} ago</span>
+                            <span>Duration: {{ job.duration_days }} day{% if job.duration_days != 1 %}s{% endif %}</span>
                         </div>
                         <div class="job-description">{{ job.description|truncatewords:25 }}</div>
                         <div style="margin-top: 0.5rem;">
@@ -171,7 +193,7 @@
         {% endfor %}
     {% else %}
         <div class="empty-state">
-            <p style="margin-bottom: 0.5rem;">No jobs found</p>
+            <p>No jobs found</p>
             <p style="font-size: 0.75rem; color: var(--text-muted);">Try adjusting your search terms or location</p>
             <a href="{% url 'jobs:search_jobs' %}" class="btn btn-secondary browse-link">Clear Filters</a>
         </div>

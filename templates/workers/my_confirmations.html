@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Jobs Pending Confirmation{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pending-list {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .pending-item {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+    
+    .pending-item:hover {
+        border-color: var(--accent-yellow);
+    }
+    
+    .pending-header {
+        background: rgba(245, 158, 11, 0.1);
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .deadline-warning {
+        color: var(--accent-red);
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+    
+    .deadline-ok {
+        color: var(--accent-green);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="pending-list">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Jobs Pending Confirmation</h1>
+            <p style="color: var(--text-secondary);">Review directions and confirm your acceptance for these jobs</p>
+        </div>
+        
+        {% if pending_confirmations %}
+            {% for match in pending_confirmations %}
+                <div class="pending-item">
+                    <div class="pending-header">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <strong style="font-size: 1rem;">{{ match.job_request.title }}</strong>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                    {{ match.job_request.location }}
+                                </div>
+                            </div>
+                            <div>
+                                {% if match.response_deadline %}
+                                    {% if match.response_deadline < now %}
+                                        <span class="deadline-warning">⚠️ EXPIRED</span>
+                                    {% else %}
+                                        <span class="deadline-ok">⏰ {{ match.response_deadline|timeuntil }} left</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 1rem;">
+                        {% if match.directions %}
+                            <div style="margin-bottom: 0.75rem;">
+                                <div style="font-size: 0.7rem; font-weight: 600; color: var(--accent-blue-light);">Directions:</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ match.directions|truncatewords:30 }}</div>
+                            </div>
+                        {% endif %}
+                        {% if match.report_time %}
+                            <div style="margin-bottom: 0.75rem;">
+                                <span style="font-size: 0.7rem; font-weight: 600;">Report by:</span>
+                                <span style="font-size: 0.75rem;">{{ match.report_time|date:"M d, Y H:i" }}</span>
+                            </div>
+                        {% endif %}
+                        <a href="{% url 'workers:confirm_job' match.id %}" class="btn btn-primary" style="width: 100%; text-align: center;">Review & Confirm</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <p>No jobs pending confirmation</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">When employers accept your application, you'll see directions here</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

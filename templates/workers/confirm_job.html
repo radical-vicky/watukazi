@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Job - {{ match.job_request.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .confirm-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .job-details-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .job-header {
+        background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .job-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-section {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    
+    .info-section:last-child {
+        border-bottom: none;
+    }
+    
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--accent-blue-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .directions-box {
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        white-space: pre-line;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        border-left: 3px solid var(--accent-blue);
+    }
+    
+    .deadline-box {
+        background: rgba(245, 158, 11, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        border-left: 3px solid var(--accent-yellow);
+    }
+    
+    .deadline-expired {
+        background: rgba(239, 68, 68, 0.1);
+        border-left-color: var(--accent-red);
+    }
+    
+    .contact-card {
+        display: inline-block;
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .warning-text {
+        color: var(--accent-red);
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    
+    @media (max-width: 640px) {
+        .action-buttons {
+            flex-direction: column;
+        }
+        .job-header {
+            padding: 1rem;
+        }
+        .job-title {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="confirm-container">
+        <div style="margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">Confirm Job Offer</h1>
+            <p style="color: var(--text-secondary);">Review the details below and confirm your acceptance</p>
+        </div>
+        
+        <div class="job-details-card">
+            <div class="job-header">
+                <div class="job-title">{{ match.job_request.title }}</div>
+                <div style="color: var(--text-muted); font-size: 0.875rem;">
+                    Employer: {{ match.job_request.employer.get_full_name|default:match.job_request.employer.username }}
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.875rem;">
+                    Location: {{ match.job_request.location }}
+                </div>
+                <div style="color: var(--accent-blue-light); font-size: 0.875rem; margin-top: 0.5rem;">
+                    Budget: KES {{ match.job_request.budget|default:"Negotiable" }}
+                </div>
+            </div>
+            
+            {% if match.contact_person or match.contact_phone %}
+                <div class="info-section">
+                    <div class="section-title">
+                        📞 Contact Information
+                    </div>
+                    <div class="contact-card">
+                        {% if match.contact_person %}
+                            <div><strong>Contact Person:</strong> {{ match.contact_person }}</div>
+                        {% endif %}
+                        {% if match.contact_phone %}
+                            <div><strong>Phone Number:</strong> {{ match.contact_phone }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if match.directions %}
+                <div class="info-section">
+                    <div class="section-title">
+                        📍 Directions to Site
+                    </div>
+                    <div class="directions-box">
+                        {{ match.directions|linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if match.procedures %}
+                <div class="info-section">
+                    <div class="section-title">
+                        📋 Procedures & Instructions
+                    </div>
+                    <div class="directions-box">
+                        {{ match.procedures|linebreaks }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if match.access_code %}
+                <div class="info-section">
+                    <div class="section-title">
+                        🔑 Access Code
+                    </div>
+                    <div style="background: var(--bg-primary); border-radius: 8px; padding: 1rem; text-align: center;">
+                        <code style="font-size: 1.25rem; font-weight: 700; color: var(--accent-blue-light);">{{ match.access_code }}</code>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="info-section">
+                <div class="section-title">
+                    ⏰ Important Dates
+                </div>
+                <div style="display: grid; gap: 0.75rem;">
+                    {% if match.report_time %}
+                        <div>
+                            <strong>Report Date & Time:</strong>
+                            <div style="font-size: 0.875rem; color: var(--accent-yellow); margin-top: 0.25rem;">
+                                {{ match.report_time|date:"l, F j, Y" }} at {{ match.report_time|date:"g:i A" }}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if match.response_deadline %}
+                        <div class="deadline-box {% if match.response_deadline < now %}deadline-expired{% endif %}">
+                            <strong>⚠️ Response Deadline:</strong>
+                            <div style="margin-top: 0.25rem;">
+                                {{ match.response_deadline|date:"l, F j, Y" }} at {{ match.response_deadline|date:"g:i A" }}
+                            </div>
+                            {% if match.response_deadline < now %}
+                                <div class="warning-text">⚠️ This deadline has passed! Please contact the employer directly.</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="job-details-card">
+            <div class="info-section">
+                <div class="section-title">
+                    ✅ Confirm Your Acceptance
+                </div>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    By confirming, you agree to:
+                </p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+                    <li>Report to the job location at the specified time</li>
+                    <li>Follow all procedures and instructions provided</li>
+                    <li>Contact the employer if you have any issues</li>
+                    <li>Complete the work to the best of your ability</li>
+                </ul>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="action-buttons">
+                        <button type="submit" name="action" value="confirm" class="btn btn-primary" style="flex: 2; padding: 0.75rem;">
+                            ✓ Confirm & Accept Job
+                        </button>
+                        <button type="submit" name="action" value="cancel" class="btn btn-outline" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);" 
+                                onclick="return confirm('Are you sure you want to cancel this job? This action cannot be undone.')">
+                            ✗ Decline Job
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="warning-text" style="margin-top: 1rem; text-align: center;">
+                    ⚠️ Once confirmed, you are expected to show up. Please only confirm if you can commit.
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: rgba(59, 130, 246, 0.05); border-radius: 10px; padding: 1rem; text-align: center;">
+            <p style="font-size: 0.7rem; color: var(--text-muted);">
+                Need to contact the employer? Call {{ match.contact_phone|default:match.job_request.employer.profile.phone_number }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

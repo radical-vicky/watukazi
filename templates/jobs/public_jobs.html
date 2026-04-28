@@ -5,7 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* GitHub-style Jobs Page */
     .page-header {
         margin-bottom: 2rem;
     }
@@ -21,7 +20,6 @@
         font-size: 0.875rem;
     }
     
-    /* Filter Bar - GitHub Style */
     .filter-bar {
         background: var(--bg-secondary);
         border: 1px solid var(--border-subtle);
@@ -69,7 +67,6 @@
         border-color: var(--accent-blue);
     }
     
-    /* Results Info */
     .results-info {
         display: flex;
         justify-content: space-between;
@@ -84,7 +81,6 @@
         color: var(--text-muted);
     }
     
-    /* Job Cards - GitHub Issue Style */
     .job-list {
         border: 1px solid var(--border-subtle);
         border-radius: 6px;
@@ -119,6 +115,17 @@
         font-size: 1rem;
         font-weight: 600;
         color: var(--text-primary);
+    }
+    
+    .employer-link {
+        color: var(--accent-blue-light);
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: normal;
+    }
+    
+    .employer-link:hover {
+        text-decoration: underline;
     }
     
     .job-id {
@@ -168,7 +175,6 @@
         color: var(--text-secondary);
     }
     
-    /* SMS Apply Section */
     .apply-section {
         background: var(--bg-primary);
         border: 1px solid var(--border-subtle);
@@ -230,7 +236,6 @@
         color: var(--accent-blue-light);
     }
     
-    /* Empty State - GitHub Blankslate */
     .blankslate {
         text-align: center;
         padding: 3rem;
@@ -249,7 +254,6 @@
         color: var(--text-muted);
     }
     
-    /* Info Banner */
     .info-banner {
         background: var(--bg-secondary);
         border: 1px solid var(--border-subtle);
@@ -350,13 +354,11 @@
 
 {% block content %}
 <div class="container">
-    <!-- Header -->
     <div class="page-header">
         <h1 class="page-title">Available Jobs</h1>
         <p class="page-description">Browse jobs posted by employers. Apply via SMS using the command below.</p>
     </div>
     
-    <!-- Filter Bar -->
     <div class="filter-bar">
         <form method="get" class="filter-form">
             <div class="filter-field">
@@ -378,30 +380,35 @@
                 </select>
             </div>
             <div class="filter-field">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Filter</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Apply Filters</button>
             </div>
         </form>
     </div>
     
-    <!-- Results Info -->
     <div class="results-info">
         <div class="results-count">{{ total_count }} job{% if total_count != 1 %}s{% endif %} found</div>
     </div>
     
-    <!-- Jobs List -->
     {% if jobs %}
         <div class="job-list">
             {% for job in jobs %}
                 <div class="job-item">
                     <div class="job-header">
-                        <span class="job-title">{{ job.title }}</span>
+                        <span class="job-title">
+                            {{ job.title }}
+                            <span style="font-size: 0.75rem; font-weight: normal;">
+                                by <a href="{% url 'employers:public_profile' job.employer.username %}" class="employer-link">
+                                    {{ job.employer.employer_profile.company_name|default:job.employer.username }}
+                                </a>
+                            </span>
+                        </span>
                         <span class="job-id">ID: {{ job.id }}</span>
                     </div>
                     <div class="job-details">
-                        <span class="job-detail-item">{{ job.location }}</span>
-                        <span class="job-detail-item">KES {{ job.budget|default:"Negotiable" }}</span>
-                        <span class="job-detail-item">Posted {{ job.created_at|date:"M d, Y" }}</span>
-                        <span class="job-detail-item">{{ job.duration_days }} day{% if job.duration_days != 1 %}s{% endif %}</span>
+                        <span class="job-detail-item">Location: {{ job.location }}</span>
+                        <span class="job-detail-item">Budget: KES {{ job.budget|default:"Negotiable" }}</span>
+                        <span class="job-detail-item">Posted: {{ job.created_at|date:"M d, Y" }}</span>
+                        <span class="job-detail-item">Duration: {{ job.duration_days }} day{% if job.duration_days != 1 %}s{% endif %}</span>
                     </div>
                     <div class="job-description">{{ job.description|truncatewords:35 }}</div>
                     {% if job.required_skills.all %}
@@ -412,7 +419,6 @@
                         </div>
                     {% endif %}
                     
-                    <!-- Apply Section -->
                     <div class="apply-section">
                         <div class="apply-info">
                             <span class="apply-label">Apply via SMS:</span>
@@ -432,10 +438,9 @@
         </div>
     {% endif %}
     
-    <!-- How to Apply Info Banner -->
     <div class="info-banner">
         <h3>How to apply via SMS</h3>
-        <p>No internet? No problem. Send an SMS to apply for any job above.</p>
+        <p>No internet connection? Send an SMS to apply for any job above.</p>
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
@@ -454,7 +459,7 @@
             <div class="step-arrow">→</div>
             <div class="step">
                 <div class="step-number">4</div>
-                <div class="step-text">You're applied!</div>
+                <div class="step-text">You are applied</div>
             </div>
         </div>
         <div class="register-link">

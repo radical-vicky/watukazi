@@ -1,534 +1,791 @@
+"""
+SMS Command Processor for Watukazi System
+Handles incoming SMS commands and routes them to appropriate handlers
+"""
+
+import re
+from datetime import datetime
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.utils import timezone
+from .utils import send_sms
 from jobs.models import JobRequest, JobMatch
 from workers.models import Skill, WorkerProfile
-from employers.models import EmployerProfile
-from accounts.models import Profile
-from .utils import send_sms
-import random
-import string
-from django.utils import timezone
 
 def process_sms_command(phone_number, message):
     """
-    Main SMS command processor - All actions can be done via SMS
+    Main entry point for processing SMS commands
     """
     message = message.strip().upper()
     
-    print(f"\nProcessing SMS from {phone_number}: {message}")
+    # Parse command
+    parts = message.split()
+    command = parts[0] if parts else ''
     
-    # Check if user is registered
+    # Find user by phone number
     try:
         user = User.objects.get(profile__phone_number=phone_number)
-        is_registered = True
     except User.DoesNotExist:
-        is_registered = False
-    
-    # Handle registration first
-    if not is_registered and not message.startswith('REGISTER'):
-        send_sms(phone_number, "You are not registered. Send: REGISTER [user_type] [username] [password] [location]\n\nExample: REGISTER worker john123 pass123 Nairobi\nOr: REGISTER employer company123 pass123 Nairobi")
-        return
-    
-    # ============ REGISTRATION COMMAND ============
-    if message.startswith('REGISTER'):
-        parts = message.split()
-        if len(parts) >= 5:
-            user_type = parts[1].lower()
-            username = parts[2]
-            password = parts[3]
-            location = parts[4]
-            company_name = ' '.join(parts[5:]) if len(parts) > 5 else ''
-            
-            if User.objects.filter(username=username).exists():
-                send_sms(phone_number, "Username already taken. Please choose another username.")
-                return
-            
-            try:
-                user = User.objects.create_user(
-                    username=username,
-                    password=password,
-                    first_name=username,
-                    last_name=user_type
-                )
-                
-                profile = Profile.objects.create(
-                    user=user,
-                    phone_number=phone_number,
-                    user_type=user_type,
-                    location=location
-                )
-                
-                if user_type == 'worker':
-                    WorkerProfile.objects.create(user=user)
-                    send_sms(phone_number, f"Welcome {username}! You are registered as a WORKER.\n\n"
-                           f"Next steps:\n"
-                           f"Add skills: ADD_SKILL [skill_name]\n"
-                           f"Set available: AVAILABLE\n"
-                           f"Find jobs: JOBS\n\n"
-                           f"Send HELP for all commands.")
-                elif user_type == 'employer':
-                    employer_profile = EmployerProfile.objects.create(user=user)
-                    if company_name:
-                        employer_profile.company_name = company_name
-                        employer_profile.save()
-                    send_sms(phone_number, f"Welcome {username}! You are registered as an EMPLOYER.\n\n"
-                           f"Next steps:\n"
-                           f"Post a job: POST|Title|Description|Location|Budget|Skills\n"
-                           f"View jobs: MYJOBS\n\n"
-                           f"Send HELP for all commands.")
-                else:
-                    send_sms(phone_number, "Invalid user type. Use 'worker' or 'employer'")
-                    user.delete()
-                    return
-                    
-            except Exception as e:
-                send_sms(phone_number, f"Registration failed: {str(e)}")
+        # New user - only allow REGISTER command
+        if command == 'REGISTER' and len(parts) >= 4:
+            return handle_register(phone_number, parts)
         else:
-            send_sms(phone_number, "Invalid REGISTER format.\n\n"
-                   "Worker: REGISTER worker username password location\n"
-                   "Employer: REGISTER employer username password location company_name")
-        return
+            response = "You are not registered. Send: REGISTER [worker/employer] [username] [password] [location]"
+            send_sms(phone_number, response)
+            return response
     
-    # ============ HELP COMMAND ============
-    if message == 'HELP':
-        if user.profile.user_type == 'worker':
-            help_text = "WATUKAZI SMS COMMANDS - WORKER\n\n"
-            help_text += "REGISTER - Create account\n"
-            help_text += "STATUS - View profile\n"
-            help_text += "ADD_SKILL [skill] - Add skill\n"
-            help_text += "REMOVE_SKILL [skill] - Remove skill\n"
-            help_text += "MY_SKILLS - View all skills\n"
-            help_text += "JOBS - Find available jobs\n"
-            help_text += "APPLY [job_id] - Apply for job\n"
-            help_text += "MY_JOBS - View applications\n"
-            help_text += "AVAILABLE - Set available\n"
-            help_text += "BUSY - Set busy\n"
-            help_text += "RATING - View rating\n"
-            help_text += "VERIFY - Request verification code\n"
-            help_text += "CONFIRM [code] - Verify account\n"
-            help_text += "HELP - This menu"
+    # Route commands based on user type
+    user_type = user.profile.user_type
+    
+    # Common commands for all users
+    if command == 'HELP':
+        return handle_help(phone_number, user_type)
+    elif command == 'STATUS':
+        return handle_status(phone_number, user)
+    elif command == 'CONFIRM':
+        return handle_confirm(phone_number, user, parts)
+    elif command == 'CANCEL':
+        return handle_cancel(phone_number, user, parts)
+    
+    # Worker-specific commands
+    if user_type == 'worker':
+        if command == 'JOBS':
+            return handle_worker_jobs(phone_number, user)
+        elif command == 'APPLY':
+            return handle_worker_apply(phone_number, user, parts)
+        elif command == 'MY_JOBS':
+            return handle_worker_my_jobs(phone_number, user)
+        elif command == 'ADD_SKILL':
+            return handle_worker_add_skill(phone_number, user, parts)
+        elif command == 'AVAILABLE':
+            return handle_worker_available(phone_number, user)
+        elif command == 'MY_SKILLS':
+            return handle_worker_my_skills(phone_number, user)
+        elif command == 'COMPLETE':
+            return handle_worker_complete(phone_number, user, parts)
+    
+    # Employer-specific commands
+    elif user_type == 'employer':
+        if command == 'POST':
+            return handle_employer_post(phone_number, user, message)
+        elif command == 'MYJOBS':
+            return handle_employer_my_jobs(phone_number, user)
+        elif command == 'APPLICANTS':
+            return handle_employer_applicants(phone_number, user, parts)
+        elif command == 'ACCEPT':
+            return handle_employer_accept(phone_number, user, parts)
+        elif command == 'REJECT':
+            return handle_employer_reject(phone_number, user, parts)
+        elif command == 'COMPLETE':
+            return handle_employer_complete(phone_number, user, parts)
+    
+    # Admin commands
+    elif user_type == 'admin':
+        if command == 'ADMIN':
+            return handle_admin(phone_number, user, parts)
+    
+    # Default response
+    response = "Unknown command. Send HELP for available commands."
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_register(phone_number, parts):
+    """Handle user registration"""
+    if len(parts) < 5:
+        response = "Usage: REGISTER [worker/employer] [username] [password] [location]"
+        send_sms(phone_number, response)
+        return response
+    
+    user_type = parts[1].lower()
+    username = parts[2]
+    password = parts[3]
+    location = ' '.join(parts[4:])
+    
+    # Check if username exists
+    if User.objects.filter(username=username).exists():
+        response = f"Username '{username}' already exists. Please choose another."
+        send_sms(phone_number, response)
+        return response
+    
+    # Create user
+    try:
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=username
+        )
+        
+        # Create profile
+        from accounts.models import Profile
+        profile = Profile.objects.create(
+            user=user,
+            user_type=user_type,
+            phone_number=phone_number,
+            location=location,
+            is_verified=True
+        )
+        
+        # Create specific profile
+        if user_type == 'worker':
+            WorkerProfile.objects.create(user=user, availability_status='available')
+            response = f"Worker account created! Username: {username}. Send JOBS to find work."
+        elif user_type == 'employer':
+            from employers.models import EmployerProfile
+            EmployerProfile.objects.create(user=user, company_name=username)
+            response = f"Employer account created! Username: {username}. Send POST to create a job."
         else:
-            help_text = "WATUKAZI SMS COMMANDS - EMPLOYER\n\n"
-            help_text += "REGISTER - Create account\n"
-            help_text += "STATUS - View profile\n"
-            help_text += "POST|Title|Desc|Loc|Budget|Skills - Post job\n"
-            help_text += "MYJOBS - View active jobs\n"
-            help_text += "JOB [id] - View job details\n"
-            help_text += "APPLICANTS [job_id] - View applicants\n"
-            help_text += "ACCEPT [match_id] - Accept worker\n"
-            help_text += "REJECT [match_id] - Reject worker\n"
-            help_text += "COMPLETE [match_id] [rating] - Complete job\n"
-            help_text += "HELP - This menu"
-        send_sms(phone_number, help_text)
-        return
+            response = "Invalid user type. Use 'worker' or 'employer'."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except Exception as e:
+        response = f"Registration failed: {str(e)}"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_help(phone_number, user_type):
+    """Send help menu"""
+    if user_type == 'worker':
+        help_text = """WATUKAZI WORKER COMMANDS:
+
+JOBS - Find available jobs
+APPLY [job_id] - Apply for a job
+MY_JOBS - View your applications
+ADD_SKILL [skill] - Add a skill to your profile
+MY_SKILLS - View your skills
+AVAILABLE - Mark yourself available for work
+CONFIRM [match_id] - Confirm an accepted job
+CANCEL [match_id] - Cancel a job
+COMPLETE [match_id] [rating] - Complete job
+STATUS - View your profile
+HELP - Show this menu"""
     
-    # ============ VERIFICATION COMMANDS ============
-    if message == 'VERIFY':
-        """Request verification code via SMS"""
-        if user.profile.user_type == 'worker':
-            try:
-                worker = user.worker_profile
-                code = ''.join(random.choices(string.digits, k=6))
-                worker.verification_code = code
-                worker.save()
-                send_sms(phone_number, f"Your Watukazi verification code is: {code}\nReply: CONFIRM {code} to verify")
-            except Exception as e:
-                send_sms(phone_number, "Error requesting verification. Please complete your profile first.")
-        else:
-            send_sms(phone_number, "Verification is only available for workers at this time.")
-        return
+    elif user_type == 'employer':
+        help_text = """WATUKAZI EMPLOYER COMMANDS:
+
+POST|Title|Desc|Location|Budget|Skills - Post a job
+MYJOBS - View your active jobs
+APPLICANTS [job_id] - View applicants for job
+ACCEPT [match_id] - Accept a worker
+REJECT [match_id] - Reject a worker
+CONFIRM [match_id] - Confirm worker acceptance
+COMPLETE [match_id] [rating] - Complete job
+STATUS - View your profile
+HELP - Show this menu"""
     
-    if message.startswith('CONFIRM'):
-        """Confirm verification via SMS: CONFIRM 123456"""
-        parts = message.split()
-        if len(parts) >= 2:
-            code = parts[1]
-            if user.profile.user_type == 'worker':
-                worker = user.worker_profile
-                if worker.verification_code == code:
-                    worker.verification_status = 'verified'
-                    worker.verified_at = timezone.now()
-                    worker.verification_code = None
-                    worker.save()
-                    send_sms(phone_number, "Verification successful! Your account is now verified.")
-                else:
-                    send_sms(phone_number, "Invalid verification code. Please try again.")
-            else:
-                send_sms(phone_number, "Verification is only available for workers.")
-        else:
-            send_sms(phone_number, "Usage: CONFIRM [code]")
-        return
-    
-    # ============ WORKER COMMANDS ============
-    if user.profile.user_type == 'worker':
-        
-        # STATUS - View profile
-        if message == 'STATUS':
-            try:
-                worker = WorkerProfile.objects.get(user=user)
-                status_text = f"WORKER PROFILE\n"
-                status_text += f"Name: {user.username}\n"
-                status_text += f"Location: {user.profile.location}\n"
-                status_text += f"Status: {worker.get_availability_status_display()}\n"
-                status_text += f"Verified: {worker.get_verification_status_display()}\n"
-                status_text += f"Skills: {worker.skills.count()}\n"
-                status_text += f"Jobs Completed: {worker.total_jobs_completed}\n"
-                status_text += f"Rating: {worker.rating}/5"
-                send_sms(phone_number, status_text)
-            except:
-                send_sms(phone_number, "Complete your profile on the website first.")
-            return
-        
-        # ADD_SKILL - Add a skill
-        if message.startswith('ADD_SKILL'):
-            skill_name = message.replace('ADD_SKILL', '').strip()
-            if not skill_name:
-                send_sms(phone_number, "Usage: ADD_SKILL [skill_name]\nExample: ADD_SKILL Plumbing")
-                return
-            
-            skills = Skill.objects.filter(name__icontains=skill_name)
-            if skills.exists():
-                skill = skills.first()
-                worker, _ = WorkerProfile.objects.get_or_create(user=user)
-                worker.skills.add(skill)
-                send_sms(phone_number, f"Added '{skill.name}' to your skills!\nTotal skills: {worker.skills.count()}")
-            else:
-                all_skills = Skill.objects.all()[:10]
-                skill_list = ", ".join([s.name for s in all_skills])
-                send_sms(phone_number, f"Skill '{skill_name}' not found.\nAvailable skills: {skill_list}...\nSend HELP for more.")
-            return
-        
-        # REMOVE_SKILL - Remove a skill
-        if message.startswith('REMOVE_SKILL'):
-            skill_name = message.replace('REMOVE_SKILL', '').strip()
-            if not skill_name:
-                send_sms(phone_number, "Usage: REMOVE_SKILL [skill_name]")
-                return
-            
-            worker = WorkerProfile.objects.get(user=user)
-            skills = worker.skills.filter(name__icontains=skill_name)
-            if skills.exists():
-                worker.skills.remove(skills.first())
-                send_sms(phone_number, f"Removed '{skills.first().name}' from your skills.")
-            else:
-                send_sms(phone_number, f"Skill '{skill_name}' not in your profile.\nSend MY_SKILLS to see your skills.")
-            return
-        
-        # MY_SKILLS - View all skills
-        if message == 'MY_SKILLS':
-            worker = WorkerProfile.objects.get(user=user)
-            skills = worker.skills.all()
-            if skills.exists():
-                skill_list = "\n".join([f"- {s.name}" for s in skills])
-                send_sms(phone_number, f"YOUR SKILLS ({skills.count()}):\n{skill_list}")
-            else:
-                send_sms(phone_number, "You have no skills yet.\nSend: ADD_SKILL [skill_name]")
-            return
-        
-        # JOBS - Find available jobs
-        if message == 'JOBS':
-            jobs = JobRequest.objects.filter(status='open', location__icontains=user.profile.location)[:5]
-            if jobs.exists():
-                job_text = "AVAILABLE JOBS NEAR YOU:\n\n"
-                for job in jobs:
-                    job_text += f"ID: {job.id}\n"
-                    job_text += f"Title: {job.title}\n"
-                    job_text += f"Location: {job.location}\n"
-                    job_text += f"Budget: KES {job.budget if job.budget else 'Negotiable'}\n"
-                    job_text += f"To apply: APPLY {job.id}\n"
-                    job_text += "-" * 20 + "\n"
-                send_sms(phone_number, job_text)
-            else:
-                send_sms(phone_number, "No jobs available in your area.\nCheck back later or update your location!")
-            return
-        
-        # APPLY - Apply for a job
-        if message.startswith('APPLY'):
-            parts = message.split()
-            if len(parts) >= 2:
-                try:
-                    job_id = int(parts[1])
-                    job = JobRequest.objects.get(id=job_id, status='open')
-                    
-                    if JobMatch.objects.filter(job_request=job, worker=user).exists():
-                        send_sms(phone_number, f"You have already applied for '{job.title}'")
-                        return
-                    
-                    match = JobMatch.objects.create(
-                        job_request=job,
-                        worker=user,
-                        status='pending',
-                        match_score=75
-                    )
-                    
-                    send_sms(phone_number, f"Applied for '{job.title}'!\n"
-                           f"Employer: {job.employer.username}\n"
-                           f"Contact: {job.employer.profile.phone_number}\n"
-                           f"They will contact you soon.")
-                    
-                    employer_msg = f"New application!\n"
-                    employer_msg += f"Job: {job.title}\n"
-                    employer_msg += f"Worker: {user.username}\n"
-                    employer_msg += f"Contact: {phone_number}\n"
-                    employer_msg += f"Reply: APPLICANTS {job.id} to view all"
-                    send_sms(job.employer.profile.phone_number, employer_msg)
-                    
-                except (ValueError, JobRequest.DoesNotExist):
-                    send_sms(phone_number, "Invalid job ID. Use JOBS to see available jobs.")
-            else:
-                send_sms(phone_number, "Usage: APPLY [job_id]\nExample: APPLY 5")
-            return
-        
-        # MY_JOBS - View applications
-        if message == 'MY_JOBS':
-            applications = JobMatch.objects.filter(worker=user).order_by('-created_at')[:5]
-            if applications.exists():
-                text = "YOUR JOB APPLICATIONS:\n\n"
-                for app in applications:
-                    text += f"Job: {app.job_request.title}\n"
-                    text += f"Status: {app.get_status_display()}\n"
-                    text += f"Employer: {app.job_request.employer.username}\n"
-                    if app.status == 'accepted':
-                        text += f"Contact: {app.job_request.employer.profile.phone_number}\n"
-                    text += "\n"
-                send_sms(phone_number, text)
-            else:
-                send_sms(phone_number, "You haven't applied for any jobs yet.\nUse JOBS to find jobs!")
-            return
-        
-        # AVAILABLE - Set available status
-        if message == 'AVAILABLE':
-            worker = WorkerProfile.objects.get(user=user)
-            worker.availability_status = 'available'
-            worker.save()
-            send_sms(phone_number, "Status: AVAILABLE\nYou will now receive job alerts!")
-            return
-        
-        # BUSY - Set busy status
-        if message == 'BUSY':
-            worker = WorkerProfile.objects.get(user=user)
-            worker.availability_status = 'busy'
-            worker.save()
-            send_sms(phone_number, "Status: BUSY\nYou won't receive job alerts until you set AVAILABLE.")
-            return
-        
-        # RATING - View rating
-        if message == 'RATING':
-            worker = WorkerProfile.objects.get(user=user)
-            rating_text = f"YOUR RATING: {worker.rating}/5\n"
-            rating_text += f"Jobs Completed: {worker.total_jobs_completed}\n"
-            if worker.rating >= 4:
-                rating_text += "Excellent! Keep up the great work!"
-            elif worker.rating >= 3:
-                rating_text += "Good! You're doing well!"
-            elif worker.rating > 0:
-                rating_text += "Keep improving!"
-            else:
-                rating_text += "Complete jobs to get ratings!"
-            send_sms(phone_number, rating_text)
-            return
-    
-    # ============ EMPLOYER COMMANDS ============
-    elif user.profile.user_type == 'employer':
-        
-        # STATUS - View profile
-        if message == 'STATUS':
-            employer = EmployerProfile.objects.get(user=user)
-            jobs_count = JobRequest.objects.filter(employer=user).count()
-            active_jobs = JobRequest.objects.filter(employer=user, status='open').count()
-            send_sms(phone_number, f"EMPLOYER PROFILE\n"
-                   f"Name: {user.username}\n"
-                   f"Company: {employer.company_name or 'Not set'}\n"
-                   f"Location: {user.profile.location}\n"
-                   f"Total Jobs: {jobs_count}\n"
-                   f"Active Jobs: {active_jobs}\n"
-                   f"Rating: {employer.rating}/5")
-            return
-        
-        # POST - Post a job via SMS
-        if message.startswith('POST|'):
-            parts = message.split('|')
-            if len(parts) >= 4:
-                try:
-                    title = parts[1] if len(parts) > 1 else "New Job"
-                    description = parts[2] if len(parts) > 2 else "Job posted via SMS"
-                    location = parts[3] if len(parts) > 3 else user.profile.location
-                    budget = parts[4] if len(parts) > 4 else None
-                    skill_names = parts[5].split(',') if len(parts) > 5 else []
-                    
-                    job = JobRequest.objects.create(
-                        employer=user,
-                        title=title,
-                        description=description,
-                        location=location,
-                        budget=budget,
-                        status='open'
-                    )
-                    
-                    for skill_name in skill_names:
-                        try:
-                            skill = Skill.objects.get(name__iexact=skill_name.strip())
-                            job.required_skills.add(skill)
-                        except Skill.DoesNotExist:
-                            pass
-                    
-                    send_sms(phone_number, f"Job posted successfully!\n"
-                           f"ID: {job.id}\n"
-                           f"Title: {job.title}\n"
-                           f"Location: {job.location}\n\n"
-                           f"Workers will be notified automatically!")
-                    
-                    matches = job.auto_match_workers()
-                    if matches:
-                        send_sms(phone_number, f"{len(matches)} workers have been notified about this job.")
-                    
-                except Exception as e:
-                    send_sms(phone_number, f"Error posting job: {str(e)}")
-            else:
-                send_sms(phone_number, "Invalid POST format.\n"
-                       "Format: POST|Title|Description|Location|Budget|Skill1,Skill2\n"
-                       "Example: POST|Need Plumber|Fix bathroom leak|Nairobi|5000|Plumbing")
-            return
-        
-        # MYJOBS - View active jobs
-        if message == 'MYJOBS':
-            jobs = JobRequest.objects.filter(employer=user, status='open')
-            if jobs.exists():
-                text = "YOUR ACTIVE JOBS:\n\n"
-                for job in jobs:
-                    text += f"ID: {job.id}\n"
-                    text += f"Title: {job.title}\n"
-                    text += f"Location: {job.location}\n"
-                    text += f"Budget: KES {job.budget if job.budget else 'Negotiable'}\n"
-                    text += f"Applicants: {job.matches.count()}\n"
-                    text += f"To view details: JOB {job.id}\n"
-                    text += "-" * 20 + "\n"
-                send_sms(phone_number, text)
-            else:
-                send_sms(phone_number, "No active jobs.\nPost a job: POST|Title|Description|Location|Budget|Skills")
-            return
-        
-        # JOB - View job details
-        if message.startswith('JOB'):
-            parts = message.split()
-            if len(parts) >= 2:
-                try:
-                    job_id = int(parts[1])
-                    job = JobRequest.objects.get(id=job_id, employer=user)
-                    text = f"JOB DETAILS\n"
-                    text += f"ID: {job.id}\n"
-                    text += f"Title: {job.title}\n"
-                    text += f"Description: {job.description[:100]}...\n"
-                    text += f"Location: {job.location}\n"
-                    text += f"Budget: KES {job.budget if job.budget else 'Negotiable'}\n"
-                    text += f"Status: {job.get_status_display()}\n"
-                    text += f"Applicants: {job.matches.count()}\n"
-                    text += f"To view applicants: APPLICANTS {job.id}"
-                    send_sms(phone_number, text)
-                except (ValueError, JobRequest.DoesNotExist):
-                    send_sms(phone_number, "Invalid job ID. Use MYJOBS to see your jobs.")
-            else:
-                send_sms(phone_number, "Usage: JOB [job_id]")
-            return
-        
-        # APPLICANTS - View applicants for a job
-        if message.startswith('APPLICANTS'):
-            parts = message.split()
-            if len(parts) >= 2:
-                try:
-                    job_id = int(parts[1])
-                    job = JobRequest.objects.get(id=job_id, employer=user)
-                    applicants = job.matches.filter(status='pending')
-                    
-                    if applicants.exists():
-                        text = f"APPLICANTS FOR '{job.title}':\n\n"
-                        for app in applicants[:5]:
-                            text += f"ID: {app.id}\n"
-                            text += f"Name: {app.worker.username}\n"
-                            text += f"Phone: {app.worker.profile.phone_number}\n"
-                            text += f"Match: {app.match_score}%\n"
-                            text += f"To accept: ACCEPT {app.id}\n"
-                            text += f"To reject: REJECT {app.id}\n"
-                            text += "-" * 20 + "\n"
-                        send_sms(phone_number, text)
-                    else:
-                        send_sms(phone_number, f"No applicants for job '{job.title}' yet.")
-                except (ValueError, JobRequest.DoesNotExist):
-                    send_sms(phone_number, "Invalid job ID. Use MYJOBS to see your jobs.")
-            else:
-                send_sms(phone_number, "Usage: APPLICANTS [job_id]")
-            return
-        
-        # ACCEPT - Accept an applicant
-        if message.startswith('ACCEPT'):
-            parts = message.split()
-            if len(parts) >= 2:
-                try:
-                    match_id = int(parts[1])
-                    match = JobMatch.objects.get(id=match_id, job_request__employer=user)
-                    match.status = 'accepted'
-                    match.save()
-                    
-                    match.job_request.status = 'matched'
-                    match.job_request.save()
-                    
-                    send_sms(phone_number, f"Accepted {match.worker.username} for '{match.job_request.title}'\n"
-                           f"Worker contact: {match.worker.profile.phone_number}")
-                    
-                    send_sms(match.worker.profile.phone_number, f"Great news! {user.username} has accepted your application for '{match.job_request.title}'.\n"
-                           f"Contact employer: {phone_number}\n"
-                           f"Good luck with the job!")
-                    
-                except (ValueError, JobMatch.DoesNotExist):
-                    send_sms(phone_number, "Invalid applicant ID. Use APPLICANTS [job_id] to see IDs.")
-            else:
-                send_sms(phone_number, "Usage: ACCEPT [applicant_id]")
-            return
-        
-        # REJECT - Reject an applicant
-        if message.startswith('REJECT'):
-            parts = message.split()
-            if len(parts) >= 2:
-                try:
-                    match_id = int(parts[1])
-                    match = JobMatch.objects.get(id=match_id, job_request__employer=user)
-                    match.status = 'rejected'
-                    match.save()
-                    
-                    send_sms(phone_number, f"Rejected {match.worker.username} for '{match.job_request.title}'")
-                    
-                    send_sms(match.worker.profile.phone_number, f"Thank you for your interest in '{match.job_request.title}'. The employer has selected another candidate.")
-                    
-                except (ValueError, JobMatch.DoesNotExist):
-                    send_sms(phone_number, "Invalid applicant ID. Use APPLICANTS [job_id] to see IDs.")
-            else:
-                send_sms(phone_number, "Usage: REJECT [applicant_id]")
-            return
-        
-        # COMPLETE - Complete a job and rate worker
-        if message.startswith('COMPLETE'):
-            parts = message.split()
-            if len(parts) >= 3:
-                try:
-                    match_id = int(parts[1])
-                    rating = int(parts[2])
-                    match = JobMatch.objects.get(id=match_id, job_request__employer=user)
-                    
-                    if 1 <= rating <= 5:
-                        match.complete_job(rating=rating)
-                        send_sms(phone_number, f"Job completed! You rated {match.worker.username} {rating}/5 stars.")
-                        
-                        send_sms(match.worker.profile.phone_number, f"Job completed!\n"
-                               f"Employer rated you {rating}/5 stars.\n"
-                               f"Thank you for your hard work!")
-                    else:
-                        send_sms(phone_number, "Rating must be between 1 and 5")
-                except (ValueError, JobMatch.DoesNotExist):
-                    send_sms(phone_number, "Invalid match ID. Use APPLICANTS [job_id] to see IDs.")
-            else:
-                send_sms(phone_number, "Usage: COMPLETE [match_id] [rating]\nExample: COMPLETE 5 4")
-            return
-    
-    # Unknown command
     else:
-        send_sms(phone_number, "Command not recognized.\nSend HELP for available commands.")
+        help_text = """WATUKAZI COMMANDS:
+
+REGISTER [worker/employer] [username] [password] [location] - Create account
+STATUS - View your profile
+HELP - Show this menu"""
+    
+    send_sms(phone_number, help_text)
+    return help_text
+
+
+def handle_status(phone_number, user):
+    """Show user status"""
+    profile = user.profile
+    
+    if profile.user_type == 'worker':
+        worker_profile = user.worker_profile
+        accepted_count = JobMatch.objects.filter(worker=user, status='accepted').count()
+        completed_count = JobMatch.objects.filter(worker=user, status='completed').count()
+        
+        status_text = f"""Your Profile:
+Name: {user.get_full_name() or user.username}
+Type: Worker
+Location: {profile.location}
+Rating: {worker_profile.rating}/5
+Jobs Completed: {worker_profile.total_jobs_completed}
+Status: {worker_profile.get_availability_status_display()}
+Pending Acceptances: {accepted_count}
+Skills: {', '.join([s.name for s in worker_profile.skills.all()[:5]])}"""
+    
+    elif profile.user_type == 'employer':
+        from employers.models import EmployerProfile
+        employer_profile = EmployerProfile.objects.get(user=user)
+        active_jobs = JobRequest.objects.filter(employer=user, status='open').count()
+        
+        status_text = f"""Your Profile:
+Name: {user.get_full_name() or user.username}
+Company: {employer_profile.company_name or 'Not set'}
+Type: Employer
+Location: {profile.location}
+Active Jobs: {active_jobs}
+Total Applications: {JobMatch.objects.filter(job_request__employer=user).count()}"""
+    
+    else:
+        status_text = f"""Admin Account:
+Username: {user.username}
+Email: {user.email}
+Type: Administrator"""
+    
+    send_sms(phone_number, status_text)
+    return status_text
+
+
+def handle_worker_jobs(phone_number, user):
+    """List available jobs for workers"""
+    # Get jobs matching worker's skills and location
+    worker_skills = user.worker_profile.skills.all()
+    worker_location = user.profile.location
+    
+    jobs = JobRequest.objects.filter(status='open')
+    
+    if worker_skills.exists():
+        jobs = jobs.filter(required_skills__in=worker_skills).distinct()
+    
+    if worker_location:
+        jobs = jobs.filter(location__icontains=worker_location)
+    
+    jobs = jobs.order_by('-created_at')[:10]
+    
+    if not jobs:
+        response = "No jobs available. Check back later!"
+    else:
+        response = f"📋 AVAILABLE JOBS (Top {jobs.count()}):\n\n"
+        for i, job in enumerate(jobs, 1):
+            response += f"{i}. {job.title}\n"
+            response += f"   ID:{job.id} | {job.location}\n"
+            response += f"   KES {job.budget if job.budget else 'Negotiable'}\n"
+            response += f"   Reply: APPLY {job.id}\n\n"
+    
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_worker_apply(phone_number, user, parts):
+    """Worker applies for a job"""
+    if len(parts) < 2:
+        response = "Usage: APPLY [job_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        job_id = int(parts[1])
+        job = JobRequest.objects.get(id=job_id, status='open')
+        
+        # Check if already applied
+        if JobMatch.objects.filter(job_request=job, worker=user).exists():
+            response = f"You have already applied for '{job.title}'"
+            send_sms(phone_number, response)
+            return response
+        
+        # Create application
+        match = JobMatch.objects.create(
+            job_request=job,
+            worker=user,
+            status='pending',
+            match_score=50
+        )
+        
+        response = f"✅ Applied for '{job.title}'! The employer will review your application and contact you."
+        send_sms(phone_number, response)
+        
+        # Notify employer
+        employer_msg = f"📝 New application!\nWorker: {user.get_full_name() or user.username}\nJob: {job.title}\nMatch Score: 50%\nLogin to review: http://127.0.0.1:8000/jobs/{job.id}/"
+        send_sms(job.employer.profile.phone_number, employer_msg)
+        
+        return response
+        
+    except JobRequest.DoesNotExist:
+        response = f"Job #{parts[1]} not found or no longer available."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid job ID. Use: APPLY [job_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_worker_my_jobs(phone_number, user):
+    """Show worker's applications"""
+    applications = JobMatch.objects.filter(worker=user).order_by('-created_at')[:10]
+    
+    if not applications:
+        response = "You haven't applied for any jobs yet. Send JOBS to find work."
+    else:
+        response = "📋 YOUR APPLICATIONS:\n\n"
+        for app in applications:
+            status_emoji = "⏳" if app.status == 'pending' else "✅" if app.status == 'accepted' else "❌" if app.status == 'rejected' else "🎉" if app.status == 'completed' else "⚠️"
+            response += f"{status_emoji} {app.job_request.title}\n"
+            response += f"   Status: {app.get_status_display()}\n"
+            
+            if app.status == 'accepted':
+                if app.response_deadline:
+                    deadline = app.response_deadline.strftime('%Y-%m-%d %H:%M')
+                    response += f"   Confirm before: {deadline}\n"
+                response += f"   Reply: CONFIRM {app.id} to accept\n"
+            
+            response += "\n"
+    
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_worker_add_skill(phone_number, user, parts):
+    """Add skill to worker profile"""
+    if len(parts) < 2:
+        response = "Usage: ADD_SKILL [skill_name]"
+        send_sms(phone_number, response)
+        return response
+    
+    skill_name = ' '.join(parts[1:]).title()
+    
+    try:
+        skill, created = Skill.objects.get_or_create(name=skill_name)
+        user.worker_profile.skills.add(skill)
+        
+        response = f"✅ Added skill: {skill_name}\nYour skills: {', '.join([s.name for s in user.worker_profile.skills.all()])}"
+        send_sms(phone_number, response)
+        return response
+        
+    except Exception as e:
+        response = f"Failed to add skill: {str(e)}"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_worker_my_skills(phone_number, user):
+    """Show worker's skills"""
+    skills = user.worker_profile.skills.all()
+    
+    if skills:
+        response = f"Your Skills:\n{', '.join([s.name for s in skills])}"
+    else:
+        response = "You have no skills. Send ADD_SKILL [skill_name] to add skills."
+    
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_worker_available(phone_number, user):
+    """Mark worker as available"""
+    user.worker_profile.availability_status = 'available'
+    user.worker_profile.save()
+    
+    response = "✅ You are now marked as AVAILABLE for work. Employers can now find you."
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_confirm(phone_number, user, parts):
+    """Confirm an accepted job"""
+    if len(parts) < 2:
+        response = "Usage: CONFIRM [match_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        match = JobMatch.objects.get(id=match_id)
+        
+        # Check permissions
+        if user.profile.user_type == 'worker' and match.worker != user:
+            response = "You don't have permission to confirm this job."
+            send_sms(phone_number, response)
+            return response
+        elif user.profile.user_type == 'employer' and match.job_request.employer != user:
+            response = "You don't have permission to confirm this job."
+            send_sms(phone_number, response)
+            return response
+        
+        if match.status == 'accepted':
+            match.status = 'confirmed'
+            match.save()
+            
+            # Send confirmation to the other party
+            if user.profile.user_type == 'worker':
+                # Notify employer
+                employer_msg = f"✅ Worker {match.worker.get_full_name() or match.worker.username} has confirmed job '{match.job_request.title}'."
+                send_sms(match.job_request.employer.profile.phone_number, employer_msg)
+                
+                response = f"✅ Job confirmed! You have confirmed '{match.job_request.title}'. Please report as directed."
+            else:
+                # Notify worker
+                worker_msg = f"✅ Employer has confirmed your application for '{match.job_request.title}'. Please report as directed."
+                send_sms(match.worker.profile.phone_number, worker_msg)
+                
+                response = f"✅ Worker confirmed! {match.worker.get_full_name() or match.worker.username} has confirmed the job."
+            
+            send_sms(phone_number, response)
+            return response
+        else:
+            response = f"Job is not in accepted status. Current status: {match.get_status_display()}"
+            send_sms(phone_number, response)
+            return response
+            
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID. Use: CONFIRM [match_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_cancel(phone_number, user, parts):
+    """Cancel a job or application"""
+    if len(parts) < 2:
+        response = "Usage: CANCEL [match_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        match = JobMatch.objects.get(id=match_id)
+        
+        # Check permissions
+        if user.profile.user_type == 'worker' and match.worker != user:
+            response = "You don't have permission to cancel this job."
+            send_sms(phone_number, response)
+            return response
+        elif user.profile.user_type == 'employer' and match.job_request.employer != user:
+            response = "You don't have permission to cancel this job."
+            send_sms(phone_number, response)
+            return response
+        
+        if match.status in ['pending', 'accepted']:
+            match.status = 'cancelled'
+            match.save()
+            
+            # Notify the other party
+            if user.profile.user_type == 'worker':
+                employer_msg = f"Worker {match.worker.get_full_name() or match.worker.username} has cancelled job '{match.job_request.title}'."
+                send_sms(match.job_request.employer.profile.phone_number, employer_msg)
+                response = f"✅ Cancelled job '{match.job_request.title}'."
+            else:
+                worker_msg = f"Employer has cancelled job '{match.job_request.title}'."
+                send_sms(match.worker.profile.phone_number, worker_msg)
+                response = f"✅ Cancelled application for '{match.job_request.title}'."
+            
+            send_sms(phone_number, response)
+            return response
+        else:
+            response = f"Cannot cancel job in {match.get_status_display()} status."
+            send_sms(phone_number, response)
+            return response
+            
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID. Use: CANCEL [match_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_employer_post(phone_number, user, message):
+    """Post a job via SMS"""
+    # Parse pipe-separated format: POST|Title|Description|Location|Budget|Skills
+    try:
+        parts = message.split('|')
+        if len(parts) < 6:
+            response = "Usage: POST|Title|Description|Location|Budget|Skill1,Skill2,Skill3"
+            send_sms(phone_number, response)
+            return response
+        
+        title = parts[1].strip()
+        description = parts[2].strip()
+        location = parts[3].strip()
+        budget = parts[4].strip() if parts[4].strip() else None
+        skill_names = [s.strip() for s in parts[5].split(',')]
+        
+        # Create job
+        job = JobRequest.objects.create(
+            employer=user,
+            title=title,
+            description=description,
+            location=location,
+            budget=budget if budget else None,
+            duration_days=1
+        )
+        
+        # Add skills
+        for skill_name in skill_names:
+            if skill_name:
+                skill, created = Skill.objects.get_or_create(name=skill_name.title())
+                job.required_skills.add(skill)
+        
+        # Auto-match workers
+        matches_created = job.auto_match_workers()
+        
+        response = f"✅ Job posted!\nID: {job.id}\nTitle: {job.title}\nLocation: {job.location}\nSkills: {', '.join(skill_names)}\n\n"
+        
+        if matches_created:
+            response += f"🚀 {len(matches_created)} matching workers have been notified."
+        else:
+            response += "⚠️ No matching workers found at the moment."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except Exception as e:
+        response = f"Failed to post job: {str(e)}"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_employer_my_jobs(phone_number, user):
+    """Show employer's jobs"""
+    jobs = JobRequest.objects.filter(employer=user).order_by('-created_at')[:10]
+    
+    if not jobs:
+        response = "You haven't posted any jobs. Send POST to create a job."
+    else:
+        response = "📋 YOUR JOBS:\n\n"
+        for job in jobs:
+            applications = JobMatch.objects.filter(job_request=job, status='pending').count()
+            response += f"ID:{job.id} | {job.title}\n"
+            response += f"   Status: {job.get_status_display()}\n"
+            response += f"   Applicants: {job.matches.count()} (Pending: {applications})\n"
+            response += f"   Reply: APPLICANTS {job.id}\n\n"
+    
+    send_sms(phone_number, response)
+    return response
+
+
+def handle_employer_applicants(phone_number, user, parts):
+    """Show applicants for a job"""
+    if len(parts) < 2:
+        response = "Usage: APPLICANTS [job_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        job_id = int(parts[1])
+        job = JobRequest.objects.get(id=job_id, employer=user)
+        
+        applicants = JobMatch.objects.filter(job_request=job).order_by('-match_score')
+        
+        if not applicants:
+            response = f"No applicants for '{job.title}' yet."
+        else:
+            response = f"📋 APPLICANTS for '{job.title}':\n\n"
+            for i, app in enumerate(applicants[:10], 1):
+                response += f"{i}. {app.worker.get_full_name() or app.worker.username}\n"
+                response += f"   ID:{app.id} | Match: {app.match_score}%\n"
+                response += f"   Phone: {app.worker.profile.phone_number}\n"
+                response += f"   Reply: ACCEPT {app.id} or REJECT {app.id}\n\n"
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except JobRequest.DoesNotExist:
+        response = f"Job #{parts[1]} not found or you don't own it."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid job ID. Use: APPLICANTS [job_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_employer_accept(phone_number, user, parts):
+    """Accept a worker application"""
+    if len(parts) < 2:
+        response = "Usage: ACCEPT [match_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        match = JobMatch.objects.get(id=match_id, job_request__employer=user)
+        
+        if match.status == 'pending':
+            match.status = 'accepted'
+            match.save()
+            
+            # Send approval message to worker
+            worker_msg = f"✅ Congratulations! Your application for '{match.job_request.title}' has been accepted!\n"
+            worker_msg += f"Contact employer: {match.job_request.employer.profile.phone_number}\n"
+            worker_msg += f"Reply CONFIRM {match.id} to accept the job."
+            send_sms(match.worker.profile.phone_number, worker_msg)
+            
+            response = f"✅ Accepted {match.worker.get_full_name() or match.worker.username} for '{match.job_request.title}'.\nWorker will be notified."
+            
+        else:
+            response = f"Cannot accept application in {match.get_status_display()} status."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID. Use: ACCEPT [match_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_employer_reject(phone_number, user, parts):
+    """Reject a worker application"""
+    if len(parts) < 2:
+        response = "Usage: REJECT [match_id]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        match = JobMatch.objects.get(id=match_id, job_request__employer=user)
+        
+        if match.status == 'pending':
+            match.status = 'rejected'
+            match.save()
+            
+            # Send rejection message to worker
+            worker_msg = f"Thank you for your interest in '{match.job_request.title}'. The employer has selected another candidate."
+            send_sms(match.worker.profile.phone_number, worker_msg)
+            
+            response = f"❌ Rejected {match.worker.get_full_name() or match.worker.username} for '{match.job_request.title}'."
+            
+        else:
+            response = f"Cannot reject application in {match.get_status_display()} status."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID. Use: REJECT [match_id]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_worker_complete(phone_number, user, parts):
+    """Worker marks job as completed and rates employer"""
+    if len(parts) < 3:
+        response = "Usage: COMPLETE [match_id] [rating] (1-5)\nOptionally add feedback: COMPLETE [match_id] [rating] [feedback]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        rating = int(parts[2])
+        
+        if rating < 1 or rating > 5:
+            response = "Rating must be between 1 and 5."
+            send_sms(phone_number, response)
+            return response
+        
+        match = JobMatch.objects.get(id=match_id, worker=user)
+        
+        if match.status == 'confirmed':
+            feedback = ' '.join(parts[3:]) if len(parts) > 3 else ''
+            match.rate_employer(rating=rating, feedback=feedback)
+            
+            # Notify employer
+            employer_msg = f"Worker {user.get_full_name() or user.username} has completed job '{match.job_request.title}' and rated you {rating}/5 stars."
+            send_sms(match.job_request.employer.profile.phone_number, employer_msg)
+            
+            response = f"✅ Job completed! You rated employer {rating}/5 stars. Thank you!"
+            
+        else:
+            response = f"Cannot complete job in {match.get_status_display()} status."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID or rating. Use: COMPLETE [match_id] [rating]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_employer_complete(phone_number, user, parts):
+    """Employer marks job as completed and rates worker"""
+    if len(parts) < 3:
+        response = "Usage: COMPLETE [match_id] [rating] (1-5)\nOptionally add feedback: COMPLETE [match_id] [rating] [feedback]"
+        send_sms(phone_number, response)
+        return response
+    
+    try:
+        match_id = int(parts[1])
+        rating = int(parts[2])
+        
+        if rating < 1 or rating > 5:
+            response = "Rating must be between 1 and 5."
+            send_sms(phone_number, response)
+            return response
+        
+        match = JobMatch.objects.get(id=match_id, job_request__employer=user)
+        
+        if match.status == 'confirmed':
+            feedback = ' '.join(parts[3:]) if len(parts) > 3 else ''
+            match.complete_job(rating=rating, feedback=feedback)
+            
+            # Notify worker
+            worker_msg = f"Employer has completed job '{match.job_request.title}' and rated you {rating}/5 stars.\n"
+            if feedback:
+                worker_msg += f"Feedback: {feedback}\n"
+            worker_msg += "Thank you for your hard work!"
+            send_sms(match.worker.profile.phone_number, worker_msg)
+            
+            response = f"✅ Job completed! You rated worker {rating}/5 stars."
+            
+        else:
+            response = f"Cannot complete job in {match.get_status_display()} status."
+        
+        send_sms(phone_number, response)
+        return response
+        
+    except JobMatch.DoesNotExist:
+        response = f"Match #{parts[1]} not found."
+        send_sms(phone_number, response)
+        return response
+    except ValueError:
+        response = "Invalid match ID or rating. Use: COMPLETE [match_id] [rating]"
+        send_sms(phone_number, response)
+        return response
+
+
+def handle_admin(phone_number, user, parts):
+    """Admin commands"""
+    if not user.is_superuser:
+        response = "Admin access required."
+        send_sms(phone_number, response)
+        return response
+    
+    if len(parts) < 2:
+        response = "Admin commands:\nADMIN STATS - System statistics\nADMIN USERS - User count"
+        send_sms(phone_number, response)
+        return response
+    
+    subcommand = parts[1].upper()
+    
+    if subcommand == 'STATS':
+        total_users = User.objects.count()
+        workers = User.objects.filter(profile__user_type='worker').count()
+        employers = User.objects.filter(profile__user_type='employer').count()
+        jobs = JobRequest.objects.count()
+        matches = JobMatch.objects.count()
+        
+        response = f"📊 SYSTEM STATISTICS:\n\nTotal Users: {total_users}\nWorkers: {workers}\nEmployers: {employers}\nJobs Posted: {jobs}\nApplications: {matches}"
+        
+    elif subcommand == 'USERS':
+        users = User.objects.all().order_by('-date_joined')[:20]
+        response = "📋 RECENT USERS:\n\n"
+        for u in users:
+            response += f"{u.username} ({u.profile.user_type})\n"
+            response += f"   Joined: {u.date_joined.strftime('%Y-%m-%d')}\n\n"
+    
+    else:
+        response = f"Unknown admin command: {subcommand}"
+    
+    send_sms(phone_number, response)
+    return response

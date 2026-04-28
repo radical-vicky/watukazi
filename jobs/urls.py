@@ -18,6 +18,7 @@ urlpatterns = [
     path('match/<int:match_id>/accept/', views.accept_match, name='accept_match'),
     path('match/<int:match_id>/reject/', views.reject_match, name='reject_match'),
     path('match/<int:match_id>/respond/', views.worker_respond_match, name='worker_respond'),
+    path('match/<int:match_id>/confirm/', views.worker_confirm_job, name='worker_confirm'),
     path('match/<int:match_id>/complete/', views.complete_job, name='complete_job'),
     path('match/<int:match_id>/rate-employer/', views.rate_employer, name='rate_employer'),
     

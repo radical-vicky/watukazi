@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
+from django.utils import timezone
+from datetime import datetime, timedelta
 from .models import JobRequest, JobMatch
 from workers.models import Skill
 
@@ -38,7 +40,6 @@ def public_jobs(request):
         'total_count': jobs.count(),
     }
     return render(request, 'jobs/public_jobs.html', context)
-
 
 
 @login_required
@@ -85,6 +86,7 @@ def create_job(request):
     }
     return render(request, 'jobs/create_job.html', context)
 
+
 @login_required
 def job_detail(request, job_id):
     job = get_object_or_404(JobRequest, id=job_id)
@@ -102,21 +104,26 @@ def job_detail(request, job_id):
     # Get user's application for this job (if worker)
     user_matches = []
     has_applied = False
+    user_match = None
     if request.user.profile.user_type == 'worker':
         user_matches = JobMatch.objects.filter(worker=request.user, job_request=job)
         has_applied = user_matches.exists()
+        if has_applied:
+            user_match = user_matches.first()
     
     context = {
         'job': job,
         'matches': matches,
         'user_matches': user_matches,
         'has_applied': has_applied,
+        'user_match': user_match,
     }
     return render(request, 'jobs/job_detail.html', context)
 
+
 @login_required
 def accept_match(request, match_id):
-    """Employer accepts a worker's application"""
+    """Employer accepts a worker's application and provides directions"""
     match = get_object_or_404(JobMatch, id=match_id)
     
     # Check if the employer owns this job
@@ -125,6 +132,43 @@ def accept_match(request, match_id):
         return redirect('/')
     
     if request.method == 'POST':
+        # Get acceptance details from form
+        directions = request.POST.get('directions', '')
+        procedures = request.POST.get('procedures', '')
+        contact_person = request.POST.get('contact_person', '')
+        contact_phone = request.POST.get('contact_phone', '')
+        access_code = request.POST.get('access_code', '')
+        report_date = request.POST.get('report_date', '')
+        report_time = request.POST.get('report_time', '')
+        deadline_date = request.POST.get('deadline_date', '')
+        deadline_time = request.POST.get('deadline_time', '')
+        
+        # Save details to match
+        match.directions = directions
+        match.procedures = procedures
+        match.contact_person = contact_person or match.job_request.employer.get_full_name()
+        match.contact_phone = contact_phone or match.job_request.employer.profile.phone_number
+        match.access_code = access_code
+        
+        # Set report deadline
+        if report_date and report_time:
+            try:
+                report_datetime = datetime.strptime(f"{report_date} {report_time}", "%Y-%m-%d %H:%M")
+                match.report_time = timezone.make_aware(report_datetime)
+            except ValueError:
+                pass
+        
+        # Set response deadline
+        if deadline_date and deadline_time:
+            try:
+                deadline_datetime = datetime.strptime(f"{deadline_date} {deadline_time}", "%Y-%m-%d %H:%M")
+                match.response_deadline = timezone.make_aware(deadline_datetime)
+            except ValueError:
+                pass
+        else:
+            # Default deadline: 24 hours from now
+            match.response_deadline = timezone.now() + timedelta(days=1)
+        
         match.status = 'accepted'
         match.save()
         
@@ -132,14 +176,52 @@ def accept_match(request, match_id):
         match.job_request.status = 'matched'
         match.job_request.save()
         
-        # Send SMS notification to worker
-        from sms_simulator.utils import send_sms
-        message = f"Congratulations! Your application for '{match.job_request.title}' has been accepted. Contact employer at {match.job_request.employer.profile.phone_number}"
-        send_sms(match.worker.profile.phone_number, message)
+        # Send SMS with directions
+        match.send_acceptance_details()
         
-        messages.success(request, f"Worker {match.worker.get_full_name()} has been notified via SMS")
+        # Also send email if available
+        if match.worker.email:
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                
+                email_body = f"""
+You have been accepted for the job: {match.job_request.title}
+
+CONTACT INFORMATION:
+Contact Person: {contact_person or match.job_request.employer.get_full_name()}
+Phone: {contact_phone or match.job_request.employer.profile.phone_number}
+
+DIRECTIONS:
+{directions or 'Not provided'}
+
+PROCEDURES:
+{procedures or 'Not provided'}
+
+{'ACCESS CODE: ' + access_code if access_code else ''}
+
+REPORT TIME: {match.report_time.strftime('%Y-%m-%d %H:%M') if match.report_time else 'As agreed with employer'}
+RESPONSE DEADLINE: {match.response_deadline.strftime('%Y-%m-%d %H:%M') if match.response_deadline else 'Please confirm ASAP'}
+
+Please confirm your acceptance by replying CONFIRM to the SMS or by logging into your account.
+
+Watukazi Team
+                """
+                
+                send_mail(
+                    f'Job Accepted: {match.job_request.title}',
+                    email_body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [match.worker.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Email sending failed: {e}")
+        
+        messages.success(request, f"Worker {match.worker.get_full_name()} has been notified via SMS with directions and procedures.")
     
     return redirect('jobs:job_detail', job_id=match.job_request.id)
+
 
 @login_required
 def reject_match(request, match_id):
@@ -163,6 +245,44 @@ def reject_match(request, match_id):
         messages.info(request, f"Application from {match.worker.get_full_name()} has been rejected.")
     
     return redirect('jobs:job_detail', job_id=match.job_request.id)
+
+
+@login_required
+def worker_confirm_job(request, match_id):
+    """Worker confirms acceptance after receiving directions"""
+    match = get_object_or_404(JobMatch, id=match_id)
+    
+    if request.user != match.worker:
+        messages.error(request, "Access denied")
+        return redirect('workers:dashboard')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'confirm':
+            match.status = 'confirmed'
+            match.save()
+            
+            # Notify employer
+            from sms_simulator.utils import send_sms
+            message = f"✅ Worker {match.worker.get_full_name()} has confirmed acceptance for job '{match.job_request.title}'. They will report as directed."
+            send_sms(match.job_request.employer.profile.phone_number, message)
+            
+            messages.success(request, "You have confirmed the job. Please report at the specified time and location.")
+            
+        elif action == 'cancel':
+            match.status = 'cancelled'
+            match.save()
+            
+            # Notify employer
+            from sms_simulator.utils import send_sms
+            message = f"❌ Worker {match.worker.get_full_name()} has cancelled job '{match.job_request.title}'."
+            send_sms(match.job_request.employer.profile.phone_number, message)
+            
+            messages.info(request, "You have cancelled this job.")
+    
+    return redirect('jobs:job_detail', job_id=match.job_request.id)
+
 
 @login_required
 def worker_respond_match(request, match_id):
@@ -200,13 +320,14 @@ def worker_respond_match(request, match_id):
         
         if response == 'accept':
             match.accept_by_worker()
-            messages.success(request, "You have accepted the job! The employer will contact you.")
+            messages.success(request, "You have accepted the job! The employer will contact you with directions.")
         elif response == 'reject':
             match.status = 'rejected'
             match.save()
             messages.info(request, "You have declined the job.")
     
     return redirect('workers:dashboard')
+
 
 @login_required
 def complete_job(request, match_id):
@@ -230,6 +351,7 @@ def complete_job(request, match_id):
     
     return redirect('jobs:job_detail', job_id=match.job_request.id)
 
+
 @login_required
 def rate_employer(request, match_id):
     """Worker rates the employer after job completion"""
@@ -252,6 +374,7 @@ def rate_employer(request, match_id):
     
     return redirect('jobs:job_detail', job_id=match.job_request.id)
 
+
 @login_required
 def my_jobs(request):
     """View all jobs posted by the employer"""
@@ -269,6 +392,7 @@ def my_jobs(request):
     }
     return render(request, 'jobs/my_jobs.html', context)
 
+
 @login_required
 def my_applications(request):
     """View all job applications by the worker"""
@@ -285,6 +409,7 @@ def my_applications(request):
         'completed_count': applications.filter(status='completed').count(),
     }
     return render(request, 'jobs/my_applications.html', context)
+
 
 @login_required
 def edit_job(request, job_id):
@@ -322,6 +447,7 @@ def edit_job(request, job_id):
     }
     return render(request, 'jobs/edit_job.html', context)
 
+
 @login_required
 def delete_job(request, job_id):
     """Delete/cancel a job posting"""
@@ -338,6 +464,7 @@ def delete_job(request, job_id):
         return redirect('employers:dashboard')
     
     return redirect('jobs:job_detail', job_id=job.id)
+
 
 @login_required
 def search_jobs(request):

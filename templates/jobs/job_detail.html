@@ -36,6 +36,18 @@
         color: var(--text-primary);
     }
     
+    .employer-link {
+        color: var(--accent-blue-light);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .employer-link:hover {
+        text-decoration: underline;
+    }
+    
     .status-section {
         margin-bottom: 1.5rem;
     }
@@ -163,6 +175,12 @@
         color: var(--accent-blue-light);
     }
     
+    .alert-success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--accent-green);
+        color: var(--accent-green);
+    }
+    
     .empty-applications {
         text-align: center;
         padding: 2rem;
@@ -177,6 +195,76 @@
         height: 1px;
         background: var(--border-subtle);
         margin: 1.5rem 0;
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-content {
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .form-textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-family: inherit;
+        resize: vertical;
+    }
+    
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+    
+    .form-hint {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .directions-card {
+        background: rgba(59, 130, 246, 0.05);
+        border-left: 3px solid var(--accent-blue);
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .directions-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--accent-blue-light);
+        margin-bottom: 0.5rem;
+    }
+    
+    .employer-rating {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+        color: var(--accent-yellow);
+        margin-left: 0.5rem;
     }
     
     @media (max-width: 768px) {
@@ -216,8 +304,21 @@
                         <div class="info-value">{{ job.duration_days }} days</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Posted</div>
-                        <div class="info-value">{{ job.created_at|date:"F j, Y" }}</div>
+                        <div class="info-label">Posted by</div>
+                        <div class="info-value">
+                            <a href="{% url 'employers:public_profile' job.employer.username %}" class="employer-link">
+                                {% if job.employer.employer_profile.company_name %}
+                                    {{ job.employer.employer_profile.company_name }}
+                                {% else %}
+                                    {{ job.employer.username }}
+                                {% endif %}
+                                {% if job.employer.employer_profile.rating > 0 %}
+                                    <span class="employer-rating">
+                                        ⭐ {{ job.employer.employer_profile.rating|floatformat:1 }}
+                                    </span>
+                                {% endif %}
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
@@ -253,6 +354,74 @@
             </div>
         </div>
         
+        <!-- Worker View - Accepted Job with Directions -->
+        {% if user.profile.user_type == 'worker' and user_match %}
+            {% if user_match.status == 'accepted' %}
+                <div class="card" style="border-color: var(--accent-green);">
+                    <div class="card-header" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">
+                        ✓ Job Accepted - Action Required
+                    </div>
+                    <div class="card-body">
+                        {% if user_match.directions %}
+                            <div class="directions-card">
+                                <div class="directions-title">📍 Directions to Site</div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); white-space: pre-line;">{{ user_match.directions }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        {% if user_match.procedures %}
+                            <div class="directions-card">
+                                <div class="directions-title">📋 Procedures & Instructions</div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); white-space: pre-line;">{{ user_match.procedures }}</p>
+                            </div>
+                        {% endif %}
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                            {% if user_match.contact_person %}
+                                <div>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">📞 Contact Person</span>
+                                    <p style="font-size: 0.75rem; font-weight: 500;">{{ user_match.contact_person }}<br><small>{{ user_match.contact_phone }}</small></p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user_match.access_code %}
+                                <div>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">🔑 Access Code</span>
+                                    <p style="font-size: 0.75rem; font-weight: 500; font-family: monospace;">{{ user_match.access_code }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user_match.report_time %}
+                                <div>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">⏰ Report By</span>
+                                    <p style="font-size: 0.75rem; font-weight: 500; color: var(--accent-yellow);">{{ user_match.report_time|date:"M d, Y H:i" }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user_match.response_deadline %}
+                                <div>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">⚠️ Confirm Before</span>
+                                    <p style="font-size: 0.75rem; font-weight: 500; color: var(--accent-red);">{{ user_match.response_deadline|date:"M d, Y H:i" }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <form method="post" action="{% url 'jobs:worker_confirm' user_match.id %}" style="display: flex; gap: 1rem; width: 100%;">
+                                {% csrf_token %}
+                                <button type="submit" name="action" value="confirm" class="btn btn-primary" style="flex: 1;">✓ Confirm & Proceed</button>
+                                <button type="submit" name="action" value="cancel" class="btn btn-outline" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);" onclick="return confirm('Are you sure you want to cancel this job?')">✗ Cancel Job</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% elif user_match.status == 'confirmed' %}
+                <div class="alert-success alert-info">
+                    <strong>✓ Job Confirmed!</strong> You have confirmed this job. Please report at the specified time and location.
+                </div>
+            {% endif %}
+        {% endif %}
+        
         <!-- Employer View - Applications -->
         {% if user == job.employer %}
             <div class="card">
@@ -263,7 +432,11 @@
                             <div class="applicant-card">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                                     <div style="flex: 1;">
-                                        <div class="applicant-name">{{ match.worker.get_full_name|default:match.worker.username }}</div>
+                                        <div class="applicant-name">
+                                            <a href="{% url 'workers:public_profile' match.worker.username %}" style="color: var(--accent-blue-light); text-decoration: none;">
+                                                {{ match.worker.get_full_name|default:match.worker.username }}
+                                            </a>
+                                        </div>
                                         <div class="applicant-detail">Phone: {{ match.worker.profile.phone_number }}</div>
                                         <div class="applicant-detail">Location: {{ match.worker.profile.location|default:"Not specified" }}</div>
                                         <div class="applicant-detail">Match Score: {{ match.match_score }}%</div>
@@ -276,6 +449,7 @@
                                     <div style="text-align: right;">
                                         <span class="status-badge 
                                             {% if match.status == 'accepted' %}status-open
+                                            {% elif match.status == 'confirmed' %}status-open
                                             {% elif match.status == 'pending' %}status-matched
                                             {% elif match.status == 'completed' %}status-completed
                                             {% else %}status-cancelled{% endif %}">
@@ -283,11 +457,8 @@
                                         </span>
                                         {% if match.status == 'pending' %}
                                             <div class="action-buttons">
-                                                <form method="post" action="{% url 'jobs:accept_match' match.id %}">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Accept</button>
-                                                </form>
-                                                <form method="post" action="{% url 'jobs:reject_match' match.id %}">
+                                                <button type="button" onclick="openAcceptModal({{ match.id }})" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Accept & Provide Directions</button>
+                                                <form method="post" action="{% url 'jobs:reject_match' match.id %}" style="display: inline;">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Reject</button>
                                                 </form>
@@ -319,7 +490,7 @@
                         </form>
                     </div>
                 </div>
-            {% elif has_applied %}
+            {% elif has_applied and user_match.status == 'pending' %}
                 <div class="alert-info">
                     You have already applied for this job. Please wait for the employer's response.
                 </div>
@@ -327,4 +498,111 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Accept Modal -->
+<div id="acceptModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 600;">Accept Worker & Provide Directions</h3>
+                <button onclick="closeAcceptModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <form id="acceptForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="matchId" name="match_id">
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Contact Person Name</label>
+                    <input type="text" name="contact_person" class="form-input" value="{{ request.user.get_full_name }}" placeholder="Who the worker should contact">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Contact Phone Number</label>
+                    <input type="tel" name="contact_phone" class="form-input" value="{{ request.user.profile.phone_number }}" placeholder="Phone number for worker to call">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Access Code (Optional)</label>
+                    <input type="text" name="access_code" class="form-input" placeholder="Gate code, office number, or password">
+                    <div class="form-hint">If the worker needs a code to access the site</div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Directions to Site/Location</label>
+                    <textarea name="directions" class="form-textarea" rows="4" placeholder="Provide clear directions to the job location:
+- Landmarks
+- Nearest bus stop/stage
+- Building name and floor
+- Google Maps link if available"></textarea>
+                    <div class="form-hint">Workers will receive these directions via SMS</div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Procedures / Instructions</label>
+                    <textarea name="procedures" class="form-textarea" rows="3" placeholder="Instructions for the worker:
+- What to bring (tools, equipment)
+- Dress code
+- Who to ask for upon arrival
+- Any safety instructions"></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label class="form-label">Report Date</label>
+                        <input type="date" name="report_date" class="form-input" value="{% now 'Y-m-d' %}">
+                    </div>
+                    <div>
+                        <label class="form-label">Report Time</label>
+                        <input type="time" name="report_time" class="form-input" value="09:00">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label class="form-label">Response Deadline Date</label>
+                        <input type="date" name="deadline_date" class="form-input" value="{% now 'Y-m-d' %}">
+                    </div>
+                    <div>
+                        <label class="form-label">Response Deadline Time</label>
+                        <input type="time" name="deadline_time" class="form-input" value="17:00">
+                    </div>
+                </div>
+                
+                <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+                    <p style="font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0;">
+                        <strong>ℹ️ Worker will receive an SMS with:</strong><br>
+                        - Directions to site<br>
+                        - Contact person details<br>
+                        - Report time and deadline<br>
+                        - All instructions provided
+                    </p>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">Accept & Send Directions</button>
+                    <button type="button" onclick="closeAcceptModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAcceptModal(matchId) {
+        document.getElementById('acceptForm').action = "{% url 'jobs:accept_match' 0 %}".replace('0', matchId);
+        document.getElementById('acceptModal').style.display = 'flex';
+    }
+    
+    function closeAcceptModal() {
+        document.getElementById('acceptModal').style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('acceptModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAcceptModal();
+        }
+    });
+</script>
 {% endblock %}
