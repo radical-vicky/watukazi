@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     
     # Local apps - Watukazi System
     'home',
+    'chat', 
     'accounts',
     'workers',
     'employers',

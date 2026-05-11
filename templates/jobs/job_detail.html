@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ job.title }}{% endblock %}
 
@@ -90,6 +91,24 @@
         border: 1px solid rgba(107, 114, 128, 0.3);
     }
     
+    .status-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent-yellow);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-accepted {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-confirmed {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
     .description-section {
         margin-bottom: 1.5rem;
     }
@@ -106,6 +125,7 @@
         color: var(--text-secondary);
         font-size: 0.875rem;
         line-height: 1.6;
+        white-space: pre-wrap;
     }
     
     .skills-section {
@@ -138,6 +158,7 @@
     
     .applicant-card:hover {
         border-color: var(--accent-blue);
+        transform: translateX(4px);
     }
     
     .applicant-name {
@@ -164,6 +185,7 @@
         display: flex;
         gap: 0.5rem;
         margin-top: 0.75rem;
+        flex-wrap: wrap;
     }
     
     .alert-info {
@@ -178,6 +200,9 @@
     .alert-success {
         background: rgba(16, 185, 129, 0.1);
         border: 1px solid var(--accent-green);
+        border-radius: 8px;
+        padding: 1rem;
+        font-size: 0.875rem;
         color: var(--accent-green);
     }
     
@@ -220,6 +245,22 @@
         overflow-y: auto;
     }
     
+    .form-input, .form-select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-family: inherit;
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+    
     .form-textarea {
         width: 100%;
         padding: 0.5rem 0.75rem;
@@ -235,6 +276,14 @@
     .form-textarea:focus {
         outline: none;
         border-color: var(--accent-blue);
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--text-secondary);
     }
     
     .form-hint {
@@ -267,6 +316,34 @@
         margin-left: 0.5rem;
     }
     
+    .chat-button {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-subtle);
+    }
+    
+    /* Heroicon styles */
+    .icon {
+        width: 16px;
+        height: 16px;
+        stroke-width: 1.5;
+        stroke: currentColor;
+        fill: none;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    
+    .icon-lg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .flex-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    
     @media (max-width: 768px) {
         .info-grid {
             grid-template-columns: 1fr;
@@ -293,29 +370,49 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <div class="info-label">Location</div>
-                        <div class="info-value">{{ job.location }}</div>
+                        <div class="info-value">
+                            <span class="flex-icon">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {{ job.location }}
+                            </span>
+                        </div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Budget</div>
-                        <div class="info-value">KES {{ job.budget|default:"Negotiable" }}</div>
+                        <div class="info-value">
+                            <span class="flex-icon">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                KES {{ job.budget|default:"Negotiable" }}
+                            </span>
+                        </div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Duration</div>
-                        <div class="info-value">{{ job.duration_days }} days</div>
+                        <div class="info-value">
+                            <span class="flex-icon">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {{ job.duration_days }} days
+                            </span>
+                        </div>
                     </div>
                     <div class="info-item">
                         <div class="info-label">Posted by</div>
                         <div class="info-value">
                             <a href="{% url 'employers:public_profile' job.employer.username %}" class="employer-link">
-                                {% if job.employer.employer_profile.company_name %}
-                                    {{ job.employer.employer_profile.company_name }}
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                {% if job.employer.employerprofile.company_name %}
+                                    {{ job.employer.employerprofile.company_name }}
                                 {% else %}
-                                    {{ job.employer.username }}
-                                {% endif %}
-                                {% if job.employer.employer_profile.rating > 0 %}
-                                    <span class="employer-rating">
-                                        ⭐ {{ job.employer.employer_profile.rating|floatformat:1 }}
-                                    </span>
+                                    {{ job.employer.get_full_name|default:job.employer.username }}
                                 {% endif %}
                             </a>
                         </div>
@@ -349,29 +446,89 @@
                         {% for skill in job.required_skills.all %}
                             <span class="skill-tag">{{ skill.name }}</span>
                         {% endfor %}
+                        {% if job.required_skills.count == 0 %}
+                            <span class="skill-tag">No specific skills required</span>
+                        {% endif %}
                     </div>
                 </div>
+                
+                <!-- Chat/Message Button - Conditional based on user type (Only ONE button) -->
+                {% if user.is_authenticated %}
+                    {% if user.profile.user_type == 'worker' and user != job.employer %}
+                        <!-- Worker viewing someone else's job - Show message button -->
+                        <div class="chat-button">
+                            <a href="{% url 'chat:start_conversation' job.id %}" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                Message Employer
+                            </a>
+                        </div>
+                    {% elif user == job.employer %}
+                        <!-- Employer viewing their own job - Show info message -->
+                        <div class="chat-button">
+                            <div style="background: rgba(59, 130, 246, 0.05); border-radius: 8px; padding: 0.75rem; text-align: center;">
+                                <span class="flex-icon" style="justify-content: center; color: var(--accent-blue-light);">
+                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    You are the employer for this job. Review applications above.
+                                </span>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Not logged in - Show login prompt -->
+                    <div class="chat-button">
+                        <a href="{% url 'accounts:worker_login' %}" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            Login to Message Employer
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
         
         <!-- Worker View - Accepted Job with Directions -->
-        {% if user.profile.user_type == 'worker' and user_match %}
+        {% if user.is_authenticated and user.profile.user_type == 'worker' and user_match %}
             {% if user_match.status == 'accepted' %}
                 <div class="card" style="border-color: var(--accent-green);">
                     <div class="card-header" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">
-                        ✓ Job Accepted - Action Required
+                        <span class="flex-icon">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Job Accepted - Action Required
+                        </span>
                     </div>
                     <div class="card-body">
                         {% if user_match.directions %}
                             <div class="directions-card">
-                                <div class="directions-title">📍 Directions to Site</div>
+                                <div class="directions-title">
+                                    <span class="flex-icon">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        Directions to Site
+                                    </span>
+                                </div>
                                 <p style="font-size: 0.75rem; color: var(--text-secondary); white-space: pre-line;">{{ user_match.directions }}</p>
                             </div>
                         {% endif %}
                         
                         {% if user_match.procedures %}
                             <div class="directions-card">
-                                <div class="directions-title">📋 Procedures & Instructions</div>
+                                <div class="directions-title">
+                                    <span class="flex-icon">
+                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                        Procedures & Instructions
+                                    </span>
+                                </div>
                                 <p style="font-size: 0.75rem; color: var(--text-secondary); white-space: pre-line;">{{ user_match.procedures }}</p>
                             </div>
                         {% endif %}
@@ -379,51 +536,66 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                             {% if user_match.contact_person %}
                                 <div>
-                                    <span style="font-size: 0.65rem; color: var(--text-muted);">📞 Contact Person</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">Contact Person</span>
                                     <p style="font-size: 0.75rem; font-weight: 500;">{{ user_match.contact_person }}<br><small>{{ user_match.contact_phone }}</small></p>
                                 </div>
                             {% endif %}
                             
                             {% if user_match.access_code %}
                                 <div>
-                                    <span style="font-size: 0.65rem; color: var(--text-muted);">🔑 Access Code</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">Access Code</span>
                                     <p style="font-size: 0.75rem; font-weight: 500; font-family: monospace;">{{ user_match.access_code }}</p>
                                 </div>
                             {% endif %}
                             
                             {% if user_match.report_time %}
                                 <div>
-                                    <span style="font-size: 0.65rem; color: var(--text-muted);">⏰ Report By</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">Report By</span>
                                     <p style="font-size: 0.75rem; font-weight: 500; color: var(--accent-yellow);">{{ user_match.report_time|date:"M d, Y H:i" }}</p>
                                 </div>
                             {% endif %}
                             
                             {% if user_match.response_deadline %}
                                 <div>
-                                    <span style="font-size: 0.65rem; color: var(--text-muted);">⚠️ Confirm Before</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">Confirm Before</span>
                                     <p style="font-size: 0.75rem; font-weight: 500; color: var(--accent-red);">{{ user_match.response_deadline|date:"M d, Y H:i" }}</p>
                                 </div>
                             {% endif %}
                         </div>
                         
                         <div class="action-buttons">
-                            <form method="post" action="{% url 'jobs:worker_confirm' user_match.id %}" style="display: flex; gap: 1rem; width: 100%;">
+                            <form method="post" action="{% url 'jobs:worker_confirm_job' user_match.id %}" style="display: flex; gap: 1rem; width: 100%; flex-wrap: wrap;">
                                 {% csrf_token %}
-                                <button type="submit" name="action" value="confirm" class="btn btn-primary" style="flex: 1;">✓ Confirm & Proceed</button>
-                                <button type="submit" name="action" value="cancel" class="btn btn-outline" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);" onclick="return confirm('Are you sure you want to cancel this job?')">✗ Cancel Job</button>
+                                <button type="submit" name="action" value="confirm" class="btn btn-primary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Confirm & Proceed
+                                </button>
+                                <button type="submit" name="action" value="cancel" class="btn btn-outline" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red); display: flex; align-items: center; justify-content: center; gap: 0.5rem;" onclick="return confirm('Are you sure you want to cancel this job?')">
+                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Cancel Job
+                                </button>
                             </form>
                         </div>
                     </div>
                 </div>
             {% elif user_match.status == 'confirmed' %}
-                <div class="alert-success alert-info">
-                    <strong>✓ Job Confirmed!</strong> You have confirmed this job. Please report at the specified time and location.
+                <div class="alert-success">
+                    <span class="flex-icon">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Job Confirmed! You have confirmed this job. Please report at the specified time and location.
+                    </span>
                 </div>
             {% endif %}
         {% endif %}
         
         <!-- Employer View - Applications -->
-        {% if user == job.employer %}
+        {% if user.is_authenticated and user == job.employer %}
             <div class="card">
                 <div class="card-header">Applications ({{ matches|length }})</div>
                 <div class="card-body">
@@ -433,34 +605,62 @@
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                                     <div style="flex: 1;">
                                         <div class="applicant-name">
-                                            <a href="{% url 'workers:public_profile' match.worker.username %}" style="color: var(--accent-blue-light); text-decoration: none;">
+                                            <a href="{% url 'workers:public_profile' match.worker.username %}" style="color: var(--accent-blue-light); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
                                                 {{ match.worker.get_full_name|default:match.worker.username }}
                                             </a>
                                         </div>
-                                        <div class="applicant-detail">Phone: {{ match.worker.profile.phone_number }}</div>
+                                        <div class="applicant-detail">Phone: {{ match.worker.profile.phone_number|default:"Not provided" }}</div>
                                         <div class="applicant-detail">Location: {{ match.worker.profile.location|default:"Not specified" }}</div>
                                         <div class="applicant-detail">Match Score: {{ match.match_score }}%</div>
                                         <div class="applicant-skills">
-                                            {% for skill in match.worker.worker_profile.skills.all|slice:":5" %}
+                                            {% for skill in match.worker.profile.skills.all|slice:":5" %}
                                                 <span class="skill-tag">{{ skill.name }}</span>
+                                            {% empty %}
+                                                <span class="skill-tag">No skills listed</span>
                                             {% endfor %}
                                         </div>
                                     </div>
                                     <div style="text-align: right;">
                                         <span class="status-badge 
-                                            {% if match.status == 'accepted' %}status-open
-                                            {% elif match.status == 'confirmed' %}status-open
-                                            {% elif match.status == 'pending' %}status-matched
+                                            {% if match.status == 'accepted' %}status-accepted
+                                            {% elif match.status == 'confirmed' %}status-confirmed
+                                            {% elif match.status == 'pending' %}status-pending
                                             {% elif match.status == 'completed' %}status-completed
                                             {% else %}status-cancelled{% endif %}">
                                             {{ match.get_status_display }}
                                         </span>
                                         {% if match.status == 'pending' %}
                                             <div class="action-buttons">
-                                                <button type="button" onclick="openAcceptModal({{ match.id }})" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Accept & Provide Directions</button>
-                                                <form method="post" action="{% url 'jobs:reject_match' match.id %}" style="display: inline;">
+                                                <button type="button" onclick="openAcceptModal({{ match.id }})" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.375rem;">
+                                                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 12px; height: 12px;">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Accept
+                                                </button>
+                                                <form method="post" action="{% url 'jobs:reject_match' match.id %}" style="display: inline;" onsubmit="return confirm('Reject {{ match.worker.get_full_name|default:match.worker.username }}?')">
                                                     {% csrf_token %}
-                                                    <button type="submit" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem;">Reject</button>
+                                                    <button type="submit" class="btn btn-secondary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.375rem;">
+                                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 12px; height: 12px;">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                        Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        {% endif %}
+                                        {% if match.status == 'confirmed' %}
+                                            <div class="action-buttons">
+                                                <form method="post" action="{% url 'jobs:complete_job' match.id %}" id="completeForm{{ match.id }}">
+                                                    {% csrf_token %}
+                                                    <button type="button" onclick="openCompleteModal({{ match.id }})" class="btn btn-primary" style="padding: 0.375rem 0.875rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.375rem;">
+                                                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 12px; height: 12px;">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Complete
+                                                    </button>
                                                 </form>
                                             </div>
                                         {% endif %}
@@ -477,24 +677,64 @@
             </div>
         
         <!-- Worker View - Apply Section -->
-        {% elif user.profile.user_type == 'worker' %}
+        {% elif user.is_authenticated and user.profile.user_type == 'worker' %}
             {% if not has_applied and job.status == 'open' %}
                 <div class="card apply-card">
                     <div class="card-header">Apply for this Job</div>
                     <div class="card-body">
-                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Interested in this position?</p>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Interested in this position? Click the button below to apply.</p>
                         <form method="post" action="{% url 'jobs:worker_respond' 0 %}">
                             {% csrf_token %}
                             <input type="hidden" name="job_id" value="{{ job.id }}">
-                            <button type="submit" name="response" value="accept" class="btn btn-primary">Apply Now</button>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                Apply Now
+                            </button>
                         </form>
                     </div>
                 </div>
             {% elif has_applied and user_match.status == 'pending' %}
                 <div class="alert-info">
-                    You have already applied for this job. Please wait for the employer's response.
+                    <span class="flex-icon">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Application Submitted! You have already applied for this job. Please wait for the employer's response. You'll receive an SMS notification when they respond.
+                    </span>
+                </div>
+            {% elif has_applied and user_match.status == 'rejected' %}
+                <div class="alert-info" style="border-color: var(--accent-red); color: var(--accent-red);">
+                    <span class="flex-icon">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Application Not Selected - The employer has selected another candidate for this position. Keep applying for other jobs!
+                    </span>
                 </div>
             {% endif %}
+        {% elif not user.is_authenticated %}
+            <div class="card apply-card">
+                <div class="card-header">Interested in this Job?</div>
+                <div class="card-body">
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">Please login or register to apply for this position.</p>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="{% url 'accounts:worker_login' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            Login
+                        </a>
+                        <a href="{% url 'accounts:worker_signup' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Register as Worker
+                        </a>
+                    </div>
+                </div>
+            </div>
         {% endif %}
     </div>
 </div>
@@ -504,13 +744,17 @@
     <div class="modal-content">
         <div style="padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.125rem; font-weight: 600;">Accept Worker & Provide Directions</h3>
+                <h3 style="font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Accept Worker & Provide Directions
+                </h3>
                 <button onclick="closeAcceptModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
             
             <form id="acceptForm" method="post">
                 {% csrf_token %}
-                <input type="hidden" id="matchId" name="match_id">
                 
                 <div style="margin-bottom: 1rem;">
                     <label class="form-label">Contact Person Name</label>
@@ -519,7 +763,7 @@
                 
                 <div style="margin-bottom: 1rem;">
                     <label class="form-label">Contact Phone Number</label>
-                    <input type="tel" name="contact_phone" class="form-input" value="{{ request.user.profile.phone_number }}" placeholder="Phone number for worker to call">
+                    <input type="tel" name="contact_phone" class="form-input" value="{{ request.user.profile.phone_number|default:'' }}" placeholder="Phone number for worker to call">
                 </div>
                 
                 <div style="margin-bottom: 1rem;">
@@ -535,7 +779,7 @@
 - Nearest bus stop/stage
 - Building name and floor
 - Google Maps link if available"></textarea>
-                    <div class="form-hint">Workers will receive these directions via SMS</div>
+                    <div class="form-hint">Workers will receive these directions via SMS and chat</div>
                 </div>
                 
                 <div style="margin-bottom: 1rem;">
@@ -550,7 +794,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div>
                         <label class="form-label">Report Date</label>
-                        <input type="date" name="report_date" class="form-input" value="{% now 'Y-m-d' %}">
+                        <input type="date" name="report_date" class="form-input">
                     </div>
                     <div>
                         <label class="form-label">Report Time</label>
@@ -561,7 +805,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
                         <label class="form-label">Response Deadline Date</label>
-                        <input type="date" name="deadline_date" class="form-input" value="{% now 'Y-m-d' %}">
+                        <input type="date" name="deadline_date" class="form-input">
                     </div>
                     <div>
                         <label class="form-label">Response Deadline Time</label>
@@ -570,17 +814,21 @@
                 </div>
                 
                 <div style="background: rgba(59, 130, 246, 0.1); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
-                    <p style="font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0;">
-                        <strong>ℹ️ Worker will receive an SMS with:</strong><br>
-                        - Directions to site<br>
-                        - Contact person details<br>
-                        - Report time and deadline<br>
-                        - All instructions provided
+                    <p style="font-size: 0.7rem; color: var(--accent-blue-light); margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Worker will receive: SMS with directions and details, chat message with all information, and deadline to confirm acceptance
                     </p>
                 </div>
                 
                 <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 2;">Accept & Send Directions</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Accept & Send Directions
+                    </button>
                     <button type="button" onclick="closeAcceptModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
                 </div>
             </form>
@@ -588,9 +836,65 @@
     </div>
 </div>
 
+<!-- Complete Job Modal -->
+<div id="completeModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg class="icon icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Complete Job & Rate Worker
+                </h3>
+                <button onclick="closeCompleteModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <form id="completeForm" method="post">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Rate the Worker (1-5 stars) *</label>
+                    <div style="display: flex; gap: 0.5rem; flex-direction: row-reverse; justify-content: flex-end;">
+                        <input type="radio" name="rating" value="5" id="star5" required style="display: none;">
+                        <label for="star5" style="font-size: 2rem; color: var(--text-muted); cursor: pointer;" onclick="setRating(5)">★</label>
+                        <input type="radio" name="rating" value="4" id="star4" style="display: none;">
+                        <label for="star4" style="font-size: 2rem; color: var(--text-muted); cursor: pointer;" onclick="setRating(4)">★</label>
+                        <input type="radio" name="rating" value="3" id="star3" style="display: none;">
+                        <label for="star3" style="font-size: 2rem; color: var(--text-muted); cursor: pointer;" onclick="setRating(3)">★</label>
+                        <input type="radio" name="rating" value="2" id="star2" style="display: none;">
+                        <label for="star2" style="font-size: 2rem; color: var(--text-muted); cursor: pointer;" onclick="setRating(2)">★</label>
+                        <input type="radio" name="rating" value="1" id="star1" style="display: none;">
+                        <label for="star1" style="font-size: 2rem; color: var(--text-muted); cursor: pointer;" onclick="setRating(1)">★</label>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label">Feedback / Comments</label>
+                    <textarea name="feedback" class="form-textarea" rows="3" placeholder="Share your experience with this worker..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Complete Job
+                    </button>
+                    <button type="button" onclick="closeCompleteModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+    let currentMatchId = null;
+    
     function openAcceptModal(matchId) {
-        document.getElementById('acceptForm').action = "{% url 'jobs:accept_match' 0 %}".replace('0', matchId);
+        currentMatchId = matchId;
+        const form = document.getElementById('acceptForm');
+        form.action = "{% url 'jobs:accept_match' 0 %}".replace('0', matchId);
         document.getElementById('acceptModal').style.display = 'flex';
     }
     
@@ -598,10 +902,38 @@
         document.getElementById('acceptModal').style.display = 'none';
     }
     
+    function openCompleteModal(matchId) {
+        currentMatchId = matchId;
+        const form = document.getElementById('completeForm');
+        form.action = "{% url 'jobs:complete_job' 0 %}".replace('0', matchId);
+        document.getElementById('completeModal').style.display = 'flex';
+    }
+    
+    function closeCompleteModal() {
+        document.getElementById('completeModal').style.display = 'none';
+    }
+    
+    function setRating(rating) {
+        for (let i = 1; i <= 5; i++) {
+            const label = document.querySelector(`label[for="star${i}"]`);
+            if (i <= rating) {
+                label.style.color = 'var(--accent-yellow)';
+            } else {
+                label.style.color = 'var(--text-muted)';
+            }
+        }
+    }
+    
     // Close modal when clicking outside
     document.getElementById('acceptModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAcceptModal();
+        }
+    });
+    
+    document.getElementById('completeModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCompleteModal();
         }
     });
 </script>

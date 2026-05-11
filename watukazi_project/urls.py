@@ -10,7 +10,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     path('', include('home.urls')),  # Add this line - home app should come before accounts
-    path('', include('accounts.urls')),  # Keep this but note it might override home if not careful
+    path('', include('accounts.urls')),
+    path('chat/', include('chat.urls')),  # Keep this but note it might override home if not careful
     path('workers/', include('workers.urls')),
     path('employers/', include('employers.urls')),
     path('jobs/', include('jobs.urls')),

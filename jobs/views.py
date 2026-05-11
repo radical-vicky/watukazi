@@ -6,6 +6,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from .models import JobRequest, JobMatch
 from workers.models import Skill
+from chat.models import Conversation  # Add this import
 
 def public_jobs(request):
     """Public job listing - no login required"""
@@ -73,6 +74,15 @@ def create_job(request):
             matches_created = job.auto_match_workers()
             if matches_created:
                 messages.info(request, f"Found {len(matches_created)} matching workers who have been notified via SMS.")
+                
+                # Create conversations with matched workers automatically
+                for match in matches_created:
+                    Conversation.objects.get_or_create(
+                        job=job,
+                        employer=request.user,
+                        worker=match.worker,
+                        defaults={'job_match': match}
+                    )
             else:
                 messages.warning(request, "No matching workers found at the moment. Your job is still open for applications.")
             
@@ -105,11 +115,20 @@ def job_detail(request, job_id):
     user_matches = []
     has_applied = False
     user_match = None
+    existing_conversation = None
+    
     if request.user.profile.user_type == 'worker':
         user_matches = JobMatch.objects.filter(worker=request.user, job_request=job)
         has_applied = user_matches.exists()
         if has_applied:
             user_match = user_matches.first()
+            # Check if conversation exists
+            existing_conversation = Conversation.objects.filter(job=job, worker=request.user).first()
+    
+    # Check if employer can start conversations
+    can_start_conversation = False
+    if request.user == job.employer:
+        can_start_conversation = True
     
     context = {
         'job': job,
@@ -117,6 +136,8 @@ def job_detail(request, job_id):
         'user_matches': user_matches,
         'has_applied': has_applied,
         'user_match': user_match,
+        'existing_conversation': existing_conversation,
+        'can_start_conversation': can_start_conversation,
     }
     return render(request, 'jobs/job_detail.html', context)
 
@@ -176,6 +197,47 @@ def accept_match(request, match_id):
         match.job_request.status = 'matched'
         match.job_request.save()
         
+        # Create or get conversation
+        conversation, created = Conversation.objects.get_or_create(
+            job=match.job_request,
+            employer=request.user,
+            worker=match.worker,
+            defaults={'job_match': match}
+        )
+        
+        # Send a message in chat with acceptance details
+        from chat.models import Message
+        welcome_message = f"""🎉 **Congratulations! You have been accepted for this job!**
+
+**Job Details:**
+📋 Title: {match.job_request.title}
+📍 Location: {match.job_request.location}
+💰 Budget: {match.job_request.budget} KES
+
+**Contact Information:**
+👤 Contact Person: {contact_person or match.job_request.employer.get_full_name()}
+📞 Phone: {contact_phone or match.job_request.employer.profile.phone_number}
+
+**Directions:**
+{directions or 'Will be provided separately'}
+
+**Procedures:**
+{procedures or 'Will be discussed'}
+
+{f'🔑 Access Code: {access_code}' if access_code else ''}
+
+{f'⏰ Report Time: {match.report_time.strftime("%Y-%m-%d %H:%M") if match.report_time else "As agreed"}'}
+
+Please respond to this message to confirm your acceptance.
+"""
+        
+        Message.objects.create(
+            conversation=conversation,
+            sender=request.user,
+            receiver=match.worker,
+            content=welcome_message
+        )
+        
         # Send SMS with directions
         match.send_acceptance_details()
         
@@ -203,7 +265,7 @@ PROCEDURES:
 REPORT TIME: {match.report_time.strftime('%Y-%m-%d %H:%M') if match.report_time else 'As agreed with employer'}
 RESPONSE DEADLINE: {match.response_deadline.strftime('%Y-%m-%d %H:%M') if match.response_deadline else 'Please confirm ASAP'}
 
-Please confirm your acceptance by replying CONFIRM to the SMS or by logging into your account.
+Please confirm your acceptance by replying CONFIRM to the SMS, responding in the chat, or logging into your account.
 
 Watukazi Team
                 """
@@ -218,7 +280,7 @@ Watukazi Team
             except Exception as e:
                 print(f"Email sending failed: {e}")
         
-        messages.success(request, f"Worker {match.worker.get_full_name()} has been notified via SMS with directions and procedures.")
+        messages.success(request, f"Worker {match.worker.get_full_name()} has been notified via SMS and chat with directions and procedures.")
     
     return redirect('jobs:job_detail', job_id=match.job_request.id)
 
@@ -236,6 +298,31 @@ def reject_match(request, match_id):
     if request.method == 'POST':
         match.status = 'rejected'
         match.save()
+        
+        # Send rejection message in chat if conversation exists
+        conversation = Conversation.objects.filter(
+            job=match.job_request,
+            employer=request.user,
+            worker=match.worker
+        ).first()
+        
+        if conversation:
+            from chat.models import Message
+            rejection_message = f"""Thank you for your interest in the position '{match.job_request.title}'.
+
+After careful consideration, we have decided to move forward with another candidate for this role.
+
+We appreciate your interest and encourage you to apply for other positions that match your skills.
+
+Best regards,
+{match.job_request.employer.get_full_name()}
+"""
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                receiver=match.worker,
+                content=rejection_message
+            )
         
         # Send SMS notification to worker
         from sms_simulator.utils import send_sms
@@ -263,6 +350,29 @@ def worker_confirm_job(request, match_id):
             match.status = 'confirmed'
             match.save()
             
+            # Send confirmation message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                worker=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                confirmation_message = f"""✅ **Job Confirmed!**
+
+I, {match.worker.get_full_name()}, confirm my acceptance for the position '{match.job_request.title}'.
+
+I will report at the specified time and location as directed.
+
+Thank you for this opportunity."""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.job_request.employer,
+                    content=confirmation_message
+                )
+            
             # Notify employer
             from sms_simulator.utils import send_sms
             message = f"✅ Worker {match.worker.get_full_name()} has confirmed acceptance for job '{match.job_request.title}'. They will report as directed."
@@ -273,6 +383,29 @@ def worker_confirm_job(request, match_id):
         elif action == 'cancel':
             match.status = 'cancelled'
             match.save()
+            
+            # Send cancellation message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                worker=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                cancellation_message = f"""❌ **Job Cancellation**
+
+Unfortunately, I must cancel my acceptance for the position '{match.job_request.title}'.
+
+Reason: {request.POST.get('cancellation_reason', 'Not specified')}
+
+I apologize for any inconvenience this may cause."""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.job_request.employer,
+                    content=cancellation_message
+                )
             
             # Notify employer
             from sms_simulator.utils import send_sms
@@ -305,7 +438,38 @@ def worker_respond_match(request, match_id):
                 status='pending',
                 match_score=50
             )
-            messages.success(request, f"You have applied for '{job.title}'. The employer will contact you.")
+            
+            # Notify employer via chat
+            conversation, created = Conversation.objects.get_or_create(
+                job=job,
+                employer=job.employer,
+                worker=request.user,
+                defaults={'job_match': match}
+            )
+            
+            from chat.models import Message
+            application_message = f"""📝 **New Job Application**
+
+I, {request.user.get_full_name()|default:request.user.username}, am applying for the position:
+
+**{job.title}**
+
+**My Skills:** {', '.join([skill.name for skill in request.user.profile.skills.all()])}
+
+**Location:** {request.user.profile.location or 'Not specified'}
+
+Please review my application and let me know if you need any additional information.
+
+Thank you for considering my application."""
+            
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                receiver=job.employer,
+                content=application_message
+            )
+            
+            messages.success(request, f"You have applied for '{job.title}'. The employer will contact you via chat.")
             return redirect('jobs:job_detail', job_id=job.id)
     
     match = get_object_or_404(JobMatch, id=match_id)
@@ -320,10 +484,63 @@ def worker_respond_match(request, match_id):
         
         if response == 'accept':
             match.accept_by_worker()
+            
+            # Send acceptance message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                worker=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                accept_message = f"""✅ **Job Offer Accepted**
+
+I am pleased to accept the job offer for:
+
+**{match.job_request.title}**
+
+I look forward to working with you on this project.
+
+Please let me know the next steps and any additional information I may need."""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.job_request.employer,
+                    content=accept_message
+                )
+            
             messages.success(request, "You have accepted the job! The employer will contact you with directions.")
+            
         elif response == 'reject':
             match.status = 'rejected'
             match.save()
+            
+            # Send rejection message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                worker=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                reject_message = f"""❌ **Job Offer Declined**
+
+Thank you for the offer, but I must respectfully decline the position:
+
+**{match.job_request.title}**
+
+Reason: {request.POST.get('rejection_reason', 'Not specified')}
+
+I appreciate your consideration and wish you the best in finding the right candidate."""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.job_request.employer,
+                    content=reject_message
+                )
+            
             messages.info(request, "You have declined the job.")
     
     return redirect('workers:dashboard')
@@ -345,6 +562,36 @@ def complete_job(request, match_id):
         
         if rating >= 1 and rating <= 5:
             match.complete_job(rating=rating, feedback=feedback)
+            
+            # Send completion message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                employer=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                completion_message = f"""✅ **Job Completed!**
+
+The job '{match.job_request.title}' has been marked as completed.
+
+**Rating:** {'⭐' * rating} ({rating}/5)
+
+**Feedback:** {feedback if feedback else 'No feedback provided'}
+
+Thank you for your hard work on this project!
+
+Best regards,
+{request.user.get_full_name()}
+"""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.worker,
+                    content=completion_message
+                )
+            
             messages.success(request, f"Job marked as completed! You rated the worker {rating}/5 stars.")
         else:
             messages.error(request, "Please provide a valid rating (1-5 stars).")
@@ -368,6 +615,38 @@ def rate_employer(request, match_id):
         
         if rating >= 1 and rating <= 5:
             match.rate_employer(rating=rating, feedback=feedback)
+            
+            # Send rating message in chat
+            conversation = Conversation.objects.filter(
+                job=match.job_request,
+                worker=request.user
+            ).first()
+            
+            if conversation:
+                from chat.models import Message
+                rating_message = f"""⭐ **Employer Rating**
+
+Thank you for the opportunity to work on:
+
+**{match.job_request.title}**
+
+I've rated you {'⭐' * rating} ({rating}/5)
+
+**Feedback:** {feedback if feedback else 'No feedback provided'}
+
+It was a pleasure working with you!
+
+Best regards,
+{request.user.get_full_name()}
+"""
+                
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=match.job_request.employer,
+                    content=rating_message
+                )
+            
             messages.success(request, f"Thank you for rating the employer {rating}/5 stars!")
         else:
             messages.error(request, "Please provide a valid rating (1-5 stars).")
@@ -383,6 +662,13 @@ def my_jobs(request):
         return redirect('/')
     
     jobs = JobRequest.objects.filter(employer=request.user).order_by('-created_at')
+    
+    # Add conversation info for each job
+    for job in jobs:
+        job.active_conversations = Conversation.objects.filter(
+            job=job,
+            is_active=True
+        ).count()
     
     context = {
         'jobs': jobs,
@@ -401,6 +687,13 @@ def my_applications(request):
         return redirect('/')
     
     applications = JobMatch.objects.filter(worker=request.user).select_related('job_request').order_by('-created_at')
+    
+    # Add conversation info for each application
+    for app in applications:
+        app.has_conversation = Conversation.objects.filter(
+            job=app.job_request,
+            worker=request.user
+        ).exists()
     
     context = {
         'applications': applications,
@@ -438,6 +731,28 @@ def edit_job(request, job_id):
                 pass
         
         job.save()
+        
+        # Send notification in all active conversations about job update
+        conversations = Conversation.objects.filter(job=job, is_active=True)
+        if conversations.exists():
+            from chat.models import Message
+            update_message = f"""📝 **Job Posting Updated**
+
+The job '{job.title}' has been updated with new information.
+
+Please review the changes and feel free to ask any questions.
+
+[View Job]({request.build_absolute_uri('/jobs/{}/'.format(job.id))})"""
+            
+            for conversation in conversations:
+                receiver = conversation.worker if request.user == conversation.employer else conversation.employer
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=receiver,
+                    content=update_message
+                )
+        
         messages.success(request, "Job updated successfully!")
         return redirect('jobs:job_detail', job_id=job.id)
     
@@ -460,7 +775,31 @@ def delete_job(request, job_id):
     if request.method == 'POST':
         job.status = 'cancelled'
         job.save()
-        messages.success(request, "Job has been cancelled.")
+        
+        # Notify all workers in conversations about cancellation
+        conversations = Conversation.objects.filter(job=job, is_active=True)
+        if conversations.exists():
+            from chat.models import Message
+            cancellation_message = f"""❌ **Job Cancelled**
+
+The job '{job.title}' has been cancelled by the employer.
+
+Reason: {request.POST.get('cancellation_reason', 'Not specified')}
+
+We apologize for any inconvenience this may cause.
+
+Thank you for your interest."""
+            
+            for conversation in conversations:
+                receiver = conversation.worker if request.user == conversation.employer else conversation.employer
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    receiver=receiver,
+                    content=cancellation_message
+                )
+        
+        messages.success(request, "Job has been cancelled and all applicants have been notified.")
         return redirect('employers:dashboard')
     
     return redirect('jobs:job_detail', job_id=job.id)

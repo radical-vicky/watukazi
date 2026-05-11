@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages - Watukazi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .conversations-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .conversation-item {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        display: block;
+        text-decoration: none;
+    }
+    
+    .conversation-item:hover {
+        border-color: var(--accent-blue);
+        transform: translateX(4px);
+    }
+    
+    .conversation-item.unread {
+        background: rgba(59, 130, 246, 0.05);
+        border-color: var(--accent-blue);
+    }
+    
+    .conversation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .conversation-user {
+        font-weight: 600;
+        color: var(--accent-blue-light);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .conversation-time {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .conversation-job {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .conversation-last-message {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .unread-badge {
+        background: var(--accent-blue);
+        color: white;
+        font-size: 0.7rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        border: 1px solid var(--border-subtle);
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        border-radius: 20px;
+    }
+    
+    .badge-info {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent-blue-light);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .icon {
+        width: 16px;
+        height: 16px;
+        stroke-width: 1.5;
+        stroke: currentColor;
+        fill: none;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    
+    .icon-lg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        stroke-width: 1;
+        color: var(--text-muted);
+    }
+    
+    .flex-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+    
+    .pagination {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .conversation-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .empty-state {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="conversations-container">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 24px; height: 24px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <h1 style="font-size: 1.5rem; font-weight: 600;">Messages</h1>
+        </div>
+        
+        {% if conversations %}
+            {% for conversation in conversations %}
+                <a href="{% url 'chat:conversation_detail' conversation.id %}" class="conversation-item {% if conversation.unread_count > 0 %}unread{% endif %}">
+                    <div class="conversation-header">
+                        <span class="conversation-user">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            {% if user == conversation.employer %}
+                                {{ conversation.worker.get_full_name|default:conversation.worker.username }}
+                            {% else %}
+                                {{ conversation.employer.get_full_name|default:conversation.employer.username }}
+                            {% endif %}
+                        </span>
+                        <span class="conversation-time">
+                            {{ conversation.updated_at|timesince }} ago
+                        </span>
+                    </div>
+                    <div class="conversation-job">
+                        <span class="badge badge-info">
+                            <span class="flex-icon">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 12px; height: 12px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {{ conversation.job.title|truncatechars:40 }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="conversation-last-message">
+                        {% if conversation.last_message %}
+                            {{ conversation.last_message.content|truncatechars:80 }}
+                        {% else %}
+                            No messages yet
+                        {% endif %}
+                    </div>
+                    {% if conversation.unread_count > 0 %}
+                        <div style="margin-top: 0.5rem;">
+                            <span class="unread-badge">{{ conversation.unread_count }} new</span>
+                        </div>
+                    {% endif %}
+                </a>
+            {% endfor %}
+            
+            {% if page_obj.has_other_pages %}
+                <div class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">
+                            <span class="flex-icon">
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </span>
+                        </a>
+                    {% endif %}
+                    <span style="padding: 0.5rem 1rem; color: var(--text-secondary);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">
+                            <span class="flex-icon">
+                                Next
+                                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </span>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">No messages yet</h3>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">
+                    When you start conversations with employers or workers,<br>
+                    they will appear here.
+                </p>
+                <div style="margin-top: 1rem;">
+                    <a href="{% url 'jobs:search_jobs' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Browse Jobs
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
