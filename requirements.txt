@@ -14,3 +14,137 @@ django-phonenumber-field
 phonenumbers
 django-cleanup
 django-ratelimit
+# Core Django
+Django
+asgiref
+sqlparse
+tzdata
+
+# Authentication
+django-allauth
+PyJWT
+cryptography
+
+# Database
+psycopg2-binary
+dj-database-url
+
+# Forms & UI
+django-crispy-forms
+crispy-bootstrap5
+
+# Media & File Storage
+Pillow
+whitenoise
+cloudinary
+django-cloudinary-storage
+
+# Environment & Configuration
+python-decouple
+python-dotenv
+
+# REST API
+djangorestframework
+djangorestframework-simplejwt
+django-filter
+drf-yasg
+
+# CORS
+django-cors-headers
+
+# Development & Debugging
+django-debug-toolbar
+django-extensions
+
+# Async & WebSockets (for real-time features)
+channels
+channels-redis
+daphne
+
+# Task Queue (for background tasks)
+celery
+redis
+amqp
+kombu
+billiard
+vine
+
+# WebSocket Support
+autobahn
+Twisted
+txaio
+constantly
+hyperlink
+incremental
+zope.interface
+Automat
+
+# HTTP Clients
+requests
+urllib3
+idna
+certifi
+charset-normalizer
+
+# Async HTTP
+aiohttp
+aiohttp-retry
+aiohappyeyeballs
+aiosignal
+frozenlist
+multidict
+yarl
+propcache
+attrs
+
+# Utilities
+python-dateutil
+six
+click
+click-didyoumean
+click-plugins
+click-repl
+colorama
+prompt-toolkit
+wcwidth
+packaging
+typing-extensions
+
+# Binary Data
+cbor2
+msgpack
+py-ubjson
+ujson
+
+# PDF Generation - IMPORTANT FOR REPORTS
+reportlab
+
+# Excel/Spreadsheet handling
+openpyxl
+xlwt
+xlrd
+
+# Data processing (optional but useful)
+pandas
+numpy
+
+# Security
+pycparser
+pyasn1
+pyasn1-modules
+pyOpenSSL
+service-identity
+
+# SMS & Notifications
+twilio
+phonenumbers
+django-phonenumber-field
+
+# Rate Limiting
+django-ratelimit
+
+# AI Integration
+groq
+
+# Production Server
+gunicorn
